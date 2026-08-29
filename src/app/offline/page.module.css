@@ -1,0 +1,24 @@
+.main {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) var(--space-4);
+}
+
+.box {
+  width: 100%;
+  max-width: var(--content-max);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: center;
+}
+
+.box h1 {
+  font-size: var(--text-2xl);
+}
+
+.box p {
+  color: var(--color-text-muted);
+}
