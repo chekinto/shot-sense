@@ -1,0 +1,69 @@
+import { analyseRound } from "./analyseRound";
+import {
+  approach,
+  completedHole,
+  completedRound,
+  eighteenPars,
+} from "@test/scoring/factories";
+
+describe("analyseRound", () => {
+  it("composes summary, STGB and benchmark for a clean level-par round", () => {
+    const analysis = analyseRound(completedRound(eighteenPars()));
+
+    expect(analysis.summary.overall.toPar).toBe(0);
+    expect(analysis.shotsToGetBack.total).toBe(0);
+    expect(analysis.benchmark.enteredInRegulation).toEqual({
+      count: 18,
+      of: 18,
+    });
+    expect(analysis.benchmark.downInThree).toEqual({ count: 18, of: 18 });
+    expect(analysis.benchmark.leakHoles).toEqual([]);
+  });
+
+  it("echoes the round id and methodology version", () => {
+    const analysis = analyseRound(
+      completedRound(eighteenPars(), {
+        id: "abc",
+        methodologyVersion: "1.0.0",
+      }),
+    );
+    expect(analysis).toMatchObject({
+      roundId: "abc",
+      methodologyVersion: "1.0.0",
+    });
+  });
+
+  it("excludes picked-up holes from approach success but keeps them in score/STGB (§9)", () => {
+    const holes = [
+      completedHole({
+        holeNumber: 1,
+        approachAttempts: [approach({ result: "green" })],
+      }),
+      completedHole({
+        holeNumber: 2,
+        pickedUp: true,
+        score: 9,
+        shotsToZone: 5,
+        putts: 2,
+        penaltyStrokes: 1,
+        approachAttempts: [
+          {
+            sequence: 1,
+            distanceBand: "150-174",
+            result: "missed-zone",
+            missDirection: "left",
+          },
+        ],
+      }),
+    ];
+    const analysis = analyseRound(
+      completedRound(holes, { plannedHoleCount: 18 }),
+    );
+
+    // approach stats ignore the picked-up hole's missed approach
+    expect(analysis.approach).toMatchObject({ successes: 1, failures: 0 });
+    // but its penalty stroke still counts toward STGB and its score toward the total
+    expect(analysis.shotsToGetBack.penalty).toBe(1);
+    expect(analysis.summary.overall.score).toBe(4 + 9);
+  });
+});
