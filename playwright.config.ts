@@ -1,4 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { loadEnvConfig } from "@next/env";
+
+// Load .env / .env.local so tests can gate on Supabase config the same way the app does.
+loadEnvConfig(process.cwd());
 
 const PORT = 3000;
 const baseURL = `http://localhost:${PORT}`;
