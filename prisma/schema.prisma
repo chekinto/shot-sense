@@ -1,0 +1,38 @@
+// Shot Sense — persistence schema.
+// Prisma is infrastructure only. Prisma-generated types never enter src/domain;
+// infrastructure/prisma/mappers converts rows <-> domain shapes.
+//
+// Auth boundary: Prisma connects through the Supabase pooler with a privileged
+// role, so Postgres RLS does not constrain it. The repository layer is the
+// enforcement boundary — every method filters by the authenticated user id.
+// RLS is still enabled on every table as a backstop for direct DB access.
+// See src/ARCHITECTURE.md.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (PgBouncer) — runtime
+  directUrl = env("DIRECT_URL") // direct — migrations / introspection
+}
+
+/// Application profile for a Supabase Auth user. One row per auth.users.id.
+/// Auth credentials live in Supabase Auth and are never duplicated here (§77).
+model Profile {
+  /// Supabase Auth user id (auth.users.id).
+  userId String @id @map("user_id") @db.Uuid
+
+  /// Playing handicap, e.g. 12.4. Null until the user completes onboarding.
+  handicap Decimal? @db.Decimal(4, 1)
+
+  /// Scoring Zone the user defaults to. Fixed at 100 in V1 (kept for a future
+  /// configurable zone); never surfaced in onboarding.
+  defaultScoringZoneYards Int @default(100) @map("default_scoring_zone_yards")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("profiles")
+}

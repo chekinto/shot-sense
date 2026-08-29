@@ -24,6 +24,19 @@ styles/         globals.css + tokens.css
   they go through `features/**`.
 - Prisma-generated types never cross into `domain/**` — convert at the mapper boundary.
 
+## Auth enforcement boundary
+
+Prisma connects through the Supabase pooler with a privileged role, so Postgres RLS does
+**not** constrain it. **The repository layer is the enforcement boundary:** every repository
+method takes the authenticated user id — resolved from the Supabase session in the feature
+layer, never from client input — and scopes every query to it.
+
+RLS is still enabled on every table (`auth.uid() = user_id`) as a backstop for any path that
+reaches Postgres directly: supabase-js, Realtime, edge functions, the Supabase dashboard.
+
+Upgrade path (only if V1's "one user per account" assumption ever breaks — e.g. coach
+sharing): move to JWT-scoped Prisma connections so RLS enforces for the app too.
+
 ## Scoring engine
 
 One engine, `domain/scoring`, runs identically on client (offline edits) and server
