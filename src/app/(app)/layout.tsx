@@ -17,11 +17,16 @@ const AppLayout = async ({ children }: { children: ReactNode }) => {
         <Link href="/dashboard" className={styles.brand}>
           Shot Sense
         </Link>
-        <form action={signOut}>
-          <button type="submit" className={styles.signOut}>
-            Sign out
-          </button>
-        </form>
+        <nav className={styles.nav}>
+          <Link href="/courses" className={styles.navLink}>
+            Courses
+          </Link>
+          <form action={signOut}>
+            <button type="submit" className={styles.signOut}>
+              Sign out
+            </button>
+          </form>
+        </nav>
       </header>
       <main className={styles.main}>{children}</main>
     </div>

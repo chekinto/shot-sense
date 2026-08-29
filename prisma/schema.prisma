@@ -36,3 +36,66 @@ model Profile {
 
   @@map("profiles")
 }
+
+/// A private, user-created golf course (§13, §78). No shared/community data in V1.
+model GolfCourse {
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @map("user_id") @db.Uuid
+  name      String
+  /// 9 or 18 (validated in the application layer).
+  holeCount Int    @map("hole_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  holes   CourseHole[]
+  teeSets TeeSet[]
+
+  @@index([userId, name])
+  @@map("golf_courses")
+}
+
+/// Par for one hole of a course (§79). Par belongs to the course hole; yardage
+/// belongs to the tee/hole combination.
+model CourseHole {
+  id         String @id @default(uuid()) @db.Uuid
+  courseId   String @map("course_id") @db.Uuid
+  holeNumber Int    @map("hole_number")
+  par        Int
+
+  course      GolfCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  teeYardages TeeHoleYardage[]
+
+  @@unique([courseId, holeNumber])
+  @@map("course_holes")
+}
+
+/// A set of tees for a course, e.g. White / Yellow / Red (§15, §80).
+model TeeSet {
+  id       String @id @default(uuid()) @db.Uuid
+  courseId String @map("course_id") @db.Uuid
+  name     String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  course   GolfCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  yardages TeeHoleYardage[]
+
+  @@unique([courseId, name])
+  @@map("tee_sets")
+}
+
+/// Yardage for one hole from one tee set (§81). Optional in V1.
+model TeeHoleYardage {
+  id           String @id @default(uuid()) @db.Uuid
+  teeSetId     String @map("tee_set_id") @db.Uuid
+  courseHoleId String @map("course_hole_id") @db.Uuid
+  yardage      Int
+
+  teeSet     TeeSet     @relation(fields: [teeSetId], references: [id], onDelete: Cascade)
+  courseHole CourseHole @relation(fields: [courseHoleId], references: [id], onDelete: Cascade)
+
+  @@unique([teeSetId, courseHoleId])
+  @@map("tee_hole_yardages")
+}
