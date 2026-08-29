@@ -1,0 +1,101 @@
+/**
+ * Global design tokens. Mobile-first. Consumed by CSS Modules via var(--token).
+ * Only raw primitives + semantic aliases live here — no component styles.
+ */
+
+:root {
+  /* ---- Spacing scale (4px base) ---- */
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* ---- Radius ---- */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.875rem;
+  --radius-full: 999px;
+
+  /* ---- Typography ---- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.5rem;
+
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---- Palette primitives ---- */
+  --green-600: #1f7a4d;
+  --green-500: #2a9d63;
+  --green-100: #e3f3ea;
+  --red-600: #c0392b;
+  --amber-500: #d98a12;
+  --slate-900: #0f172a;
+  --slate-700: #334155;
+  --slate-500: #64748b;
+  --slate-300: #cbd5e1;
+  --slate-200: #e2e8f0;
+  --slate-100: #f1f5f9;
+  --white: #ffffff;
+
+  /* ---- Semantic surfaces / text / borders (light) ---- */
+  --color-bg: var(--slate-100);
+  --color-surface: var(--white);
+  --color-surface-raised: var(--white);
+  --color-text: var(--slate-900);
+  --color-text-muted: var(--slate-500);
+  --color-border: var(--slate-200);
+  --color-border-strong: var(--slate-300);
+
+  --color-accent: var(--green-600);
+  --color-accent-contrast: var(--white);
+  --color-accent-soft: var(--green-100);
+
+  --color-danger: var(--red-600);
+  --color-warning: var(--amber-500);
+
+  /* ---- Elevation ---- */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px rgba(15, 23, 42, 0.1);
+
+  /* ---- Layout ---- */
+  --content-max: 32rem;
+  --tap-target-min: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #0b1220;
+    --color-surface: #131c2b;
+    --color-surface-raised: #1a2536;
+    --color-text: #e8edf4;
+    --color-text-muted: #9aa8bd;
+    --color-border: #263247;
+    --color-border-strong: #35455f;
+
+    --color-accent: var(--green-500);
+    --color-accent-contrast: #06110b;
+    --color-accent-soft: #10261a;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  }
+}
