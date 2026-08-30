@@ -12,7 +12,9 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   forbidOnly: isCI,
-  retries: isCI ? 2 : 0,
+  // One local retry absorbs the occasional transient Supabase auth hiccup when
+  // several signup journeys hit the pooler in parallel.
+  retries: isCI ? 2 : 1,
   workers: isCI ? 1 : undefined,
   reporter: isCI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {

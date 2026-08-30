@@ -80,6 +80,26 @@ export const courseRepository = {
     return row ? toCourse(row) : null;
   },
 
+  /** Lightweight list for the start-round picker: course + its tee names. */
+  async listForRoundStart(userId: string): Promise<
+    { id: string; name: string; holeCount: number; teeSets: { id: string; name: string }[] }[]
+  > {
+    const rows = await prisma.golfCourse.findMany({
+      where: { userId },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        holeCount: true,
+        teeSets: {
+          orderBy: { name: "asc" },
+          select: { id: true, name: true },
+        },
+      },
+    });
+    return rows;
+  },
+
   async create(userId: string, input: CourseInput): Promise<Course> {
     const row = await prisma.golfCourse.create({
       data: {
