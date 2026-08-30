@@ -50,6 +50,7 @@ model GolfCourse {
 
   holes   CourseHole[]
   teeSets TeeSet[]
+  rounds  Round[]
 
   @@index([userId, name])
   @@map("golf_courses")
@@ -81,6 +82,7 @@ model TeeSet {
 
   course   GolfCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
   yardages TeeHoleYardage[]
+  rounds   Round[]
 
   @@unique([courseId, name])
   @@map("tee_sets")
@@ -98,4 +100,88 @@ model TeeHoleYardage {
 
   @@unique([teeSetId, courseHoleId])
   @@map("tee_hole_yardages")
+}
+
+/// §83 — round lifecycle. Closing the app never abandons a round (§19);
+/// ABANDONED is always an explicit user action.
+enum RoundStatus {
+  DRAFT
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  ABANDONED
+
+  @@map("round_status")
+}
+
+/// A round of golf (§82). `courseId` / `teeSetId` are nullable and SET NULL on
+/// delete so historical rounds survive deletion of the saved course (§91).
+/// The round's own snapshot (name, tee, per-hole par/yardage) is authoritative
+/// for analysis — saved-course edits never change history (§17).
+model Round {
+  id                 String      @id @default(uuid()) @db.Uuid
+  userId             String      @map("user_id") @db.Uuid
+  courseId           String?     @map("course_id") @db.Uuid
+  teeSetId           String?     @map("tee_set_id") @db.Uuid
+  playedOn           DateTime    @map("played_on") @db.Date
+  plannedHoleCount   Int         @map("planned_hole_count")
+  completedHoleCount Int         @default(0) @map("completed_hole_count")
+  handicapAtStart    Decimal?    @map("handicap_at_start") @db.Decimal(4, 1)
+  scoringZoneYards   Int         @map("scoring_zone_yards")
+  status             RoundStatus @default(IN_PROGRESS)
+  methodologyVersion String      @map("methodology_version")
+  version            Int         @default(1)
+  createdAt          DateTime    @default(now()) @map("created_at")
+  updatedAt          DateTime    @updatedAt @map("updated_at")
+  completedAt        DateTime?   @map("completed_at")
+
+  course   GolfCourse?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  teeSet   TeeSet?              @relation(fields: [teeSetId], references: [id], onDelete: SetNull)
+  snapshot RoundCourseSnapshot?
+  holes    RoundHole[]
+
+  @@index([userId, status])
+  @@map("rounds")
+}
+
+/// §84 — one per round. Course-level snapshot; hole-level snapshot is on RoundHole.
+model RoundCourseSnapshot {
+  id         String  @id @default(uuid()) @db.Uuid
+  roundId    String  @unique @map("round_id") @db.Uuid
+  courseName String  @map("course_name")
+  teeName    String? @map("tee_name")
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@map("round_course_snapshots")
+}
+
+/// §85 — one row per played hole. Scoring fields are nullable while the round is
+/// in progress. Derived values (shots from zone, score to par, result) are never
+/// persisted (§92). `teeOutcome` / `teeLie` / `firstPuttDistance` are stored as
+/// strings and mapped to domain enums at the mapper boundary (§101).
+model RoundHole {
+  id                String   @id @default(uuid()) @db.Uuid
+  roundId           String   @map("round_id") @db.Uuid
+  holeNumber        Int      @map("hole_number")
+  par               Int
+  yardage           Int?
+  score             Int?
+  shotsToZone       Int?     @map("shots_to_zone")
+  putts             Int?
+  firstPuttDistance String?  @map("first_putt_distance")
+  teeOutcome        String?  @map("tee_outcome")
+  teeLie            String?  @map("tee_lie")
+  bunkerShots       Int      @default(0) @map("bunker_shots")
+  bunkersVisited    Int      @default(0) @map("bunkers_visited")
+  penaltyStrokes    Int      @default(0) @map("penalty_strokes")
+  isComplete        Boolean  @default(false) @map("is_complete")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  version           Int      @default(1)
+
+  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([roundId, holeNumber])
+  @@map("round_holes")
 }

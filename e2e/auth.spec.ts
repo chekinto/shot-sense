@@ -37,7 +37,12 @@ test.describe("auth journey", () => {
     await page.getByRole("button", { name: /continue/i }).click();
 
     await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByText(/handicap 15\.2/i)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /start a round/i }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /finish setting up/i }),
+    ).toHaveCount(0);
 
     await page.getByRole("button", { name: /sign out/i }).click();
     await expect(page).toHaveURL(/\/login$/);

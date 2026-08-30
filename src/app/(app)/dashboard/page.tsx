@@ -1,12 +1,16 @@
 import Link from "next/link";
 import { getOrCreateProfile } from "@/features/profile/service";
 import { hasCompletedOnboarding } from "@/features/profile/types";
+import { getActiveRound } from "@/features/rounds/service";
 import styles from "./page.module.css";
 
 export const metadata = { title: "Dashboard" };
 
 const DashboardPage = async () => {
-  const profile = await getOrCreateProfile();
+  const [profile, activeRound] = await Promise.all([
+    getOrCreateProfile(),
+    getActiveRound(),
+  ]);
 
   return (
     <div className={styles.page}>
@@ -20,10 +24,27 @@ const DashboardPage = async () => {
             Add handicap
           </Link>
         </section>
+      ) : null}
+
+      {activeRound ? (
+        <section className={styles.card}>
+          <h2>Resume round</h2>
+          <p>
+            {activeRound.courseName}
+            {activeRound.teeName ? ` · ${activeRound.teeName}` : ""} — hole{" "}
+            {activeRound.resumeHoleNumber} of {activeRound.plannedHoleCount}
+          </p>
+          <Link href={`/rounds/${activeRound.id}/play`} className={styles.cta}>
+            Resume
+          </Link>
+        </section>
       ) : (
         <section className={styles.card}>
-          <h2>Handicap {profile.handicap}</h2>
-          <p>Round recording arrives in the next slice.</p>
+          <h2>Start a round</h2>
+          <p>Pick a course and record your round as you play.</p>
+          <Link href="/rounds/new" className={styles.cta}>
+            Start round
+          </Link>
         </section>
       )}
     </div>
