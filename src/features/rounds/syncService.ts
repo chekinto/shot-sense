@@ -1,6 +1,11 @@
 import "server-only";
 import { z } from "zod";
-import { FIRST_PUTT_DISTANCE_BANDS, validateCompletedHole } from "@/domain/scoring";
+import {
+  FIRST_PUTT_DISTANCE_BANDS,
+  TEE_LIES,
+  TEE_OUTCOMES,
+  validateCompletedHole,
+} from "@/domain/scoring";
 import {
   roundRepository,
   RoundNotEditableError,
@@ -13,6 +18,8 @@ const holeStateSchema = z.object({
   shotsToZone: z.number().int().nullable(),
   putts: z.number().int().nullable(),
   firstPuttDistance: z.enum(FIRST_PUTT_DISTANCE_BANDS).nullable(),
+  teeOutcome: z.enum(TEE_OUTCOMES).nullable(),
+  teeLie: z.enum(TEE_LIES).nullable(),
   penaltyStrokes: z.number().int().min(0),
   isComplete: z.boolean(),
 });
@@ -58,6 +65,8 @@ export const applySyncOperations = async (
         shotsToZone: op.shotsToZone,
         putts: op.putts,
         firstPuttDistance: op.firstPuttDistance,
+        teeOutcome: op.teeOutcome,
+        teeLie: op.teeLie,
         penaltyStrokes: op.penaltyStrokes,
       });
       await roundRepository.setHoleComplete(

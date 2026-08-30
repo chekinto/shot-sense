@@ -304,5 +304,27 @@ exports[`scoring engine — golden output produces the canonical analysis for th
     },
     "plannedHoleCount": 18,
   },
+  "tee": {
+    "costlyHoles": [
+      4,
+      7,
+    ],
+    "costlyOffTee": 2,
+    "lies": {
+      "bunker": 1,
+      "fairway": 12,
+      "rough": 3,
+      "trees-other": 2,
+    },
+    "outcomes": {
+      "clear": 13,
+      "compromised": 3,
+      "penalty": 1,
+      "recovery-required": 1,
+    },
+    "penaltyOffTee": 1,
+    "recorded": 18,
+    "troubleOffTee": 5,
+  },
 }
 `;

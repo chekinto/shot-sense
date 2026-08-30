@@ -9,9 +9,13 @@ import {
 } from "@/components/ui";
 import {
   FIRST_PUTT_DISTANCE_BANDS,
+  TEE_LIES,
+  TEE_OUTCOMES,
   calculateShotsFromZone,
   validateCompletedHole,
   type FirstPuttDistanceBand,
+  type TeeLie,
+  type TeeOutcome,
 } from "@/domain/scoring";
 import type { CompleteHoleValues, HolePatch, PlayHole } from "../types";
 import styles from "./HoleForm.module.css";
@@ -22,6 +26,20 @@ const FIRST_PUTT_LABELS: Record<FirstPuttDistanceBand, string> = {
   "15-30ft": "15–30 ft",
   "30-50ft": "30–50 ft",
   "50ft-plus": "50+ ft",
+};
+
+const TEE_OUTCOME_LABELS: Record<TeeOutcome, string> = {
+  clear: "Clear",
+  compromised: "Compromised",
+  "recovery-required": "Recovery",
+  penalty: "Penalty",
+};
+
+const TEE_LIE_LABELS: Record<TeeLie, string> = {
+  fairway: "Fairway",
+  rough: "Rough",
+  bunker: "Bunker",
+  "trees-other": "Trees / other",
 };
 
 interface HoleFormProps {
@@ -48,8 +66,27 @@ export const HoleForm = ({
   onCompleted,
 }: HoleFormProps) => {
   const [errors, setErrors] = useState<string[]>([]);
-  const [showPenalty, setShowPenalty] = useState(hole.penaltyStrokes > 0);
+  const [penaltyRevealed, setPenaltyRevealed] = useState(
+    hole.penaltyStrokes > 0,
+  );
   const [pending, startTransition] = useTransition();
+
+  // A penalty off the tee always means penalty strokes on the hole, so reveal
+  // the stepper (correction #2 — the golfer still assigns them).
+  const showPenalty =
+    penaltyRevealed ||
+    hole.penaltyStrokes > 0 ||
+    hole.teeOutcome === "penalty";
+  const teePenaltyMismatch =
+    hole.teeOutcome === "penalty" && hole.penaltyStrokes === 0;
+
+  const setTeeOutcome = (teeOutcome: TeeOutcome) => {
+    if (teeOutcome === "penalty" && hole.penaltyStrokes === 0) {
+      onPatch({ teeOutcome, penaltyStrokes: 1 });
+    } else {
+      onPatch({ teeOutcome });
+    }
+  };
 
   const shotsFromZone =
     hole.score !== null &&
@@ -87,6 +124,8 @@ export const HoleForm = ({
           shotsToZone: hole.shotsToZone,
           putts: hole.putts,
           firstPuttDistance: hole.firstPuttDistance,
+          teeOutcome: hole.teeOutcome,
+          teeLie: hole.teeLie,
           penaltyStrokes: hole.penaltyStrokes,
         });
       } catch {
@@ -182,6 +221,35 @@ export const HoleForm = ({
         />
       ) : null}
 
+      <SegmentedControl<TeeOutcome>
+        label="Off the tee"
+        options={TEE_OUTCOMES.map((outcome) => ({
+          label: TEE_OUTCOME_LABELS[outcome],
+          value: outcome,
+        }))}
+        value={hole.teeOutcome}
+        onChange={setTeeOutcome}
+        size="sm"
+      />
+
+      <SegmentedControl<TeeLie>
+        label="Tee shot ended up"
+        options={TEE_LIES.map((lie) => ({
+          label: TEE_LIE_LABELS[lie],
+          value: lie,
+        }))}
+        value={hole.teeLie}
+        onChange={(teeLie) => onPatch({ teeLie })}
+        size="sm"
+      />
+
+      {teePenaltyMismatch ? (
+        <InlineNotice tone="info">
+          Tee shot marked as a penalty but the hole has no penalty strokes yet —
+          add them below.
+        </InlineNotice>
+      ) : null}
+
       {showPenalty ? (
         <Stepper
           label="Penalty strokes"
@@ -194,7 +262,7 @@ export const HoleForm = ({
         <button
           type="button"
           className={styles.addEvent}
-          onClick={() => setShowPenalty(true)}
+          onClick={() => setPenaltyRevealed(true)}
         >
           + Penalty
         </button>

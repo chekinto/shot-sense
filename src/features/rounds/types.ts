@@ -24,7 +24,11 @@ export interface ActiveRound {
   status: RoundStatus;
 }
 
-import type { FirstPuttDistanceBand } from "@/domain/scoring";
+import type {
+  FirstPuttDistanceBand,
+  TeeLie,
+  TeeOutcome,
+} from "@/domain/scoring";
 
 /** One hole on the play screen: par/yardage snapshot + whatever's been recorded. */
 export interface PlayHole {
@@ -37,6 +41,8 @@ export interface PlayHole {
   shotsToZone: number | null;
   putts: number | null;
   firstPuttDistance: FirstPuttDistanceBand | null;
+  teeOutcome: TeeOutcome | null;
+  teeLie: TeeLie | null;
   penaltyStrokes: number;
 }
 
@@ -46,6 +52,8 @@ export interface HolePatch {
   shotsToZone?: number | null;
   putts?: number | null;
   firstPuttDistance?: FirstPuttDistanceBand | null;
+  teeOutcome?: TeeOutcome | null;
+  teeLie?: TeeLie | null;
   penaltyStrokes?: number;
 }
 
@@ -55,6 +63,8 @@ export interface CompleteHoleValues {
   shotsToZone: number | null;
   putts: number | null;
   firstPuttDistance: FirstPuttDistanceBand | null;
+  teeOutcome: TeeOutcome | null;
+  teeLie: TeeLie | null;
   penaltyStrokes: number;
 }
 

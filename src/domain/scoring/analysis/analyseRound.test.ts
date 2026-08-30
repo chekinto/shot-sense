@@ -20,6 +20,18 @@ describe("analyseRound", () => {
     expect(analysis.benchmark.leakHoles).toEqual([]);
   });
 
+  it("includes the tee-shot context", () => {
+    const holes = eighteenPars().map((h, i) =>
+      i === 0
+        ? completedHole({ holeNumber: 1, teeOutcome: "recovery-required" })
+        : completedHole({ holeNumber: i + 1, teeOutcome: "clear" }),
+    );
+    const analysis = analyseRound(completedRound(holes));
+    expect(analysis.tee.recorded).toBe(18);
+    expect(analysis.tee.outcomes.clear).toBe(17);
+    expect(analysis.tee.costlyHoles).toEqual([1]);
+  });
+
   it("echoes the round id and methodology version", () => {
     const analysis = analyseRound(
       completedRound(eighteenPars(), {

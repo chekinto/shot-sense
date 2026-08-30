@@ -194,6 +194,8 @@ export const roundRepository = {
       putts: row.putts,
       firstPuttDistance:
         (row.firstPuttDistance as PlayHole["firstPuttDistance"]) ?? null,
+      teeOutcome: (row.teeOutcome as PlayHole["teeOutcome"]) ?? null,
+      teeLie: (row.teeLie as PlayHole["teeLie"]) ?? null,
       penaltyStrokes: row.penaltyStrokes,
     };
   },

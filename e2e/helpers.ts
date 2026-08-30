@@ -63,7 +63,14 @@ const bump = async (page: Page, label: RegExp, times: number) => {
 /** Fill in the current hole's steppers on the play screen. */
 export const recordHole = async (
   page: Page,
-  values: { score: number; shotsToZone: number; putts: number; penalty?: number },
+  values: {
+    score: number;
+    shotsToZone: number;
+    putts: number;
+    penalty?: number;
+    teeOutcome?: string;
+    teeLie?: string;
+  },
 ): Promise<void> => {
   await bump(page, /increase score/i, values.score);
   await bump(
@@ -75,7 +82,18 @@ export const recordHole = async (
   if (values.putts > 0) {
     await page.getByRole("radio", { name: /5–15/ }).click();
   }
+
+  const teeGroup = page.getByRole("radiogroup", { name: /off the tee/i });
+  await teeGroup
+    .getByRole("radio", { name: values.teeOutcome ?? "Clear" })
+    .click();
+  await page
+    .getByRole("radiogroup", { name: /tee shot ended up/i })
+    .getByRole("radio", { name: values.teeLie ?? "Fairway" })
+    .click();
+
   if (values.penalty) {
+    // Default tee outcome is "Clear", so the penalty stepper starts hidden.
     await page.getByRole("button", { name: /\+ penalty/i }).click();
     await bump(page, /increase penalty strokes/i, values.penalty);
   }

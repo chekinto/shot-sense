@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui";
 import type { SectionSummary } from "@/domain/scoring";
 import type { PostRoundView } from "./types";
-import { resultBreakdown, toParLabel } from "./format";
+import { resultBreakdown, teeOutcomeBreakdown, toParLabel } from "./format";
 import styles from "./PostRound.module.css";
 
 const SectionRow = ({
@@ -29,7 +29,7 @@ const SectionRow = ({
 
 export const PostRound = ({ view }: { view: PostRoundView }) => {
   const { round, analysis, comparison, completedRoundCount } = view;
-  const { summary, benchmark, shotsToGetBack, observations } = analysis;
+  const { summary, benchmark, shotsToGetBack, tee, observations } = analysis;
 
   const longLagThreePutts = observations.some(
     (o) => o.id === "three-putts" && /long range/i.test(o.text),
@@ -146,6 +146,29 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
             : ""}
         </p>
       </Card>
+
+      {tee.recorded > 0 ? (
+        <Card>
+          <h2 className={styles.cardTitle}>Off the tee</h2>
+          <p className={styles.teeBreakdown}>{teeOutcomeBreakdown(tee)}</p>
+          {tee.costlyOffTee > 0 ? (
+            <p className={styles.teeCostly}>
+              {tee.costlyOffTee} tee shot{tee.costlyOffTee === 1 ? "" : "s"}{" "}
+              forced a recovery or cost a penalty
+              {tee.costlyHoles.length > 0
+                ? ` (hole${tee.costlyHoles.length === 1 ? "" : "s"} ${tee.costlyHoles.join(", ")})`
+                : ""}
+              .
+            </p>
+          ) : (
+            <p className={styles.clean}>Nothing off the tee cost you a stroke.</p>
+          )}
+          <p className={styles.teeNote}>
+            Judged by consequence, not fairways hit. Where the stroke actually
+            leaked comes with approach tracking.
+          </p>
+        </Card>
+      ) : null}
 
       {observations.length > 0 ? (
         <Card>

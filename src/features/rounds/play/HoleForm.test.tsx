@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HoleForm } from "./HoleForm";
 import type { PlayHole } from "../types";
@@ -14,6 +14,8 @@ const hole = (overrides: Partial<PlayHole> = {}): PlayHole => ({
   shotsToZone: null,
   putts: null,
   firstPuttDistance: null,
+  teeOutcome: null,
+  teeLie: null,
   penaltyStrokes: 0,
   ...overrides,
 });
@@ -26,13 +28,14 @@ const renderForm = (
   extra: Partial<ComponentProps<typeof HoleForm>> = {},
 ) => {
   const onComplete = jest.fn(async () => ({ completedHoleCount: 1 }));
+  const onPatch = jest.fn();
   render(
     <HoleForm
       hole={h}
       scoringZoneYards={100}
       isLastPlannedHole={false}
       hasPrevious
-      onPatch={jest.fn()}
+      onPatch={onPatch}
       onFlush={asyncNoop}
       onComplete={onComplete}
       onPrevious={noop}
@@ -40,7 +43,7 @@ const renderForm = (
       {...extra}
     />,
   );
-  return { onComplete };
+  return { onComplete, onPatch };
 };
 
 describe("HoleForm", () => {
@@ -75,6 +78,58 @@ describe("HoleForm", () => {
     expect(
       screen.getByRole("group", { name: "Penalty strokes" }),
     ).toBeInTheDocument();
+  });
+
+  it("always shows the tee outcome and lie controls", () => {
+    renderForm(hole());
+    expect(
+      screen.getByRole("radiogroup", { name: /off the tee/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: /tee shot ended up/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("auto-fills a penalty stroke and reveals the stepper when the tee shot is a penalty", async () => {
+    const user = userEvent.setup();
+    const { onPatch } = renderForm(hole());
+    const teeGroup = screen.getByRole("radiogroup", { name: /off the tee/i });
+    await user.click(within(teeGroup).getByRole("radio", { name: "Penalty" }));
+    expect(onPatch).toHaveBeenCalledWith({
+      teeOutcome: "penalty",
+      penaltyStrokes: 1,
+    });
+  });
+
+  it("shows the penalty stepper when the hole already has a tee penalty", () => {
+    renderForm(hole({ teeOutcome: "penalty", penaltyStrokes: 1 }));
+    expect(
+      screen.getByRole("group", { name: "Penalty strokes" }),
+    ).toBeInTheDocument();
+  });
+
+  it("nudges when a tee penalty has no penalty strokes on the hole", () => {
+    renderForm(hole({ teeOutcome: "penalty", penaltyStrokes: 0 }));
+    expect(screen.getByText(/no penalty strokes yet/i)).toBeInTheDocument();
+  });
+
+  it("passes tee outcome and lie to onComplete", async () => {
+    const user = userEvent.setup();
+    const { onComplete } = renderForm(
+      hole({
+        score: 4,
+        shotsToZone: 2,
+        putts: 2,
+        firstPuttDistance: "5-15ft",
+        teeOutcome: "clear",
+        teeLie: "fairway",
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
+    expect(onComplete).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ teeOutcome: "clear", teeLie: "fairway" }),
+    );
   });
 
   it("blocks completion with a validation message when the hole is incomplete", async () => {
