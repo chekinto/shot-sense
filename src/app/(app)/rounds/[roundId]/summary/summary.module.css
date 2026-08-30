@@ -1,41 +1,11 @@
-.page {
+.wrap {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
 }
 
-.title {
-  font-size: var(--text-2xl);
-}
-
-.meta {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.score {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-.big {
-  font-size: var(--text-3xl);
-  font-weight: var(--weight-bold);
-}
-
-.par {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
-.next {
-  font-size: var(--text-sm);
-  color: var(--color-text-muted);
-}
-
 .back {
-  align-self: flex-start;
   font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
 }

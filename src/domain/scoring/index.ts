@@ -85,3 +85,8 @@ export {
 
 // ---- Analysis ----
 export { analyseRound, type RoundAnalysis } from "./analysis/analyseRound";
+export {
+  generateRoundObservations,
+  OBSERVATION_LIMIT,
+  type RoundObservation,
+} from "./analysis/observations";

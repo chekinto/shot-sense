@@ -99,6 +99,40 @@ export const roundRepository = {
     return row ? toPlayableRound(row) : null;
   },
 
+  /** Raw completed round (+ snapshot + holes) for the analysis engine. */
+  async findCompletedRow(userId: string, roundId: string) {
+    return prisma.round.findFirst({
+      where: {
+        id: roundId,
+        userId,
+        status: { in: ["COMPLETED", "ABANDONED"] },
+      },
+      include: withSnapshotAndHoles,
+    });
+  },
+
+  /** The user's completed round before `beforeCompletedAt`, for a benchmark comparison. */
+  async findPreviousCompletedRow(
+    userId: string,
+    beforeCompletedAt: Date | null,
+  ) {
+    return prisma.round.findFirst({
+      where: {
+        userId,
+        status: "COMPLETED",
+        ...(beforeCompletedAt
+          ? { completedAt: { lt: beforeCompletedAt } }
+          : {}),
+      },
+      orderBy: { completedAt: "desc" },
+      include: { holes: true },
+    });
+  },
+
+  async countCompleted(userId: string): Promise<number> {
+    return prisma.round.count({ where: { userId, status: "COMPLETED" } });
+  },
+
   /**
    * Autosave a partial hole update. Verifies the round is the user's and still
    * editable, applies the patch, bumps the hole version. `expectedVersion`, when
