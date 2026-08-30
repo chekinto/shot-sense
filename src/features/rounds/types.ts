@@ -24,21 +24,40 @@ export interface ActiveRound {
   status: RoundStatus;
 }
 
-export interface RoundHoleSnapshot {
+import type { FirstPuttDistanceBand } from "@/domain/scoring";
+
+/** One hole on the play screen: par/yardage snapshot + whatever's been recorded. */
+export interface PlayHole {
   holeNumber: number;
   par: number;
   yardage: number | null;
   isComplete: boolean;
+  version: number;
+  score: number | null;
+  shotsToZone: number | null;
+  putts: number | null;
+  firstPuttDistance: FirstPuttDistanceBand | null;
+  penaltyStrokes: number;
 }
 
-/** Everything the play screen needs about a round (Epic 5 will add recording). */
+/** The mutable per-hole fields the play screen writes. */
+export interface HolePatch {
+  score?: number | null;
+  shotsToZone?: number | null;
+  putts?: number | null;
+  firstPuttDistance?: FirstPuttDistanceBand | null;
+  penaltyStrokes?: number;
+}
+
+/** Everything the play screen needs about a round. */
 export interface PlayableRound {
   id: string;
   courseName: string;
   teeName: string | null;
   plannedHoleCount: number;
+  completedHoleCount: number;
   scoringZoneYards: number;
   handicapAtStart: number | null;
   status: RoundStatus;
-  holes: RoundHoleSnapshot[];
+  holes: PlayHole[];
 }

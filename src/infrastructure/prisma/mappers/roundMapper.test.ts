@@ -19,7 +19,17 @@ const baseRound = {
   completedAt: null,
 };
 
-const hole = (holeNumber: number, isComplete: boolean) => ({
+const hole = (
+  holeNumber: number,
+  isComplete: boolean,
+  overrides: Partial<{
+    score: number | null;
+    shotsToZone: number | null;
+    putts: number | null;
+    firstPuttDistance: string | null;
+    penaltyStrokes: number;
+  }> = {},
+) => ({
   id: `h${holeNumber}`,
   roundId: "round-1",
   holeNumber,
@@ -38,6 +48,7 @@ const hole = (holeNumber: number, isComplete: boolean) => ({
   createdAt: new Date(),
   updatedAt: new Date(),
   version: 1,
+  ...overrides,
 });
 
 describe("toDomainRoundStatus", () => {
@@ -97,5 +108,40 @@ describe("toPlayableRound", () => {
     expect(playable.holes.map((h) => h.holeNumber)).toEqual([1, 2]);
     expect(playable.holes[0]?.yardage).toBe(410);
     expect(playable.teeName).toBeNull();
+  });
+
+  it("carries recorded hole values and completedHoleCount", () => {
+    const playable = toPlayableRound({
+      ...baseRound,
+      snapshot: null,
+      holes: [
+        hole(1, true, {
+          score: 5,
+          shotsToZone: 2,
+          putts: 2,
+          firstPuttDistance: "15-30ft",
+          penaltyStrokes: 1,
+        }),
+        hole(2, false),
+      ],
+    });
+
+    expect(playable.completedHoleCount).toBe(1);
+    expect(playable.holes[0]).toMatchObject({
+      score: 5,
+      shotsToZone: 2,
+      putts: 2,
+      firstPuttDistance: "15-30ft",
+      penaltyStrokes: 1,
+    });
+  });
+
+  it("drops an unrecognised first-putt band", () => {
+    const playable = toPlayableRound({
+      ...baseRound,
+      snapshot: null,
+      holes: [hole(1, true, { putts: 1, firstPuttDistance: "garbage" })],
+    });
+    expect(playable.holes[0]?.firstPuttDistance).toBeNull();
   });
 });
