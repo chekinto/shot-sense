@@ -1,27 +1,10 @@
-import { test, expect, type Page } from "@playwright/test";
-import { createCourse, signUpAndOnboard, supabaseConfigured } from "./helpers";
-
-const bump = async (page: Page, label: RegExp, times: number) => {
-  const button = page.getByRole("button", { name: label });
-  for (let i = 0; i < times; i += 1) await button.click();
-};
-
-const recordHole = async (
-  page: Page,
-  values: { score: number; shotsToZone: number; putts: number; penalty?: number },
-) => {
-  await bump(page, /increase score/i, values.score);
-  await bump(page, /increase shots to reach inside 100 yds/i, values.shotsToZone + 1);
-  await bump(page, /increase putts/i, values.putts + 1);
-  if (values.putts > 0) {
-    await page.getByRole("radio", { name: /5–15/ }).click();
-  }
-  if (values.penalty) {
-    await page.getByRole("button", { name: /\+ penalty/i }).click();
-    // The penalty stepper starts at 0 (not null), so no +1 priming click.
-    await bump(page, /increase penalty strokes/i, values.penalty);
-  }
-};
+import { test, expect } from "@playwright/test";
+import {
+  createCourse,
+  recordHole,
+  signUpAndOnboard,
+  supabaseConfigured,
+} from "./helpers";
 
 test.describe("record a round", () => {
   test.skip(!supabaseConfigured, "needs a Supabase test project");

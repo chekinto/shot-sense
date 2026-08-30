@@ -9,6 +9,8 @@ interface FinishRoundProps {
   roundId: string;
   plannedHoleCount: number;
   completedHoleCount: number;
+  online: boolean;
+  pendingSync: number;
   onNeedsHole: (holeNumber: number) => void;
 }
 
@@ -16,6 +18,8 @@ export const FinishRound = ({
   roundId,
   plannedHoleCount,
   completedHoleCount,
+  online,
+  pendingSync,
   onNeedsHole,
 }: FinishRoundProps) => {
   const [incomplete, setIncomplete] = useState<number[]>([]);
@@ -24,6 +28,10 @@ export const FinishRound = ({
   const allDone = completedHoleCount >= plannedHoleCount;
   const canFinishNine =
     !allDone && plannedHoleCount === 18 && completedHoleCount >= 9;
+  // Finishing needs the server. When the round is complete, also wait for the
+  // sync queue so the server has every hole; an incomplete round just comes
+  // back with the missing-holes list, so don't gate that on sync.
+  const blocked = !online || (allDone && pendingSync > 0);
 
   const finish = (holeCount?: number) => {
     setIncomplete([]);
@@ -54,7 +62,15 @@ export const FinishRound = ({
         </InlineNotice>
       ) : null}
 
-      <Button fullWidth disabled={pending} onClick={() => finish()}>
+      {blocked ? (
+        <InlineNotice tone="info">
+          {online
+            ? "Syncing your last few changes — hold on."
+            : "You're offline. Reconnect to finish the round and see your analysis; nothing is lost until then."}
+        </InlineNotice>
+      ) : null}
+
+      <Button fullWidth disabled={pending || blocked} onClick={() => finish()}>
         {pending ? "Finishing…" : `Finish ${plannedHoleCount}-hole round`}
       </Button>
 
@@ -62,7 +78,7 @@ export const FinishRound = ({
         <Button
           variant="secondary"
           fullWidth
-          disabled={pending}
+          disabled={pending || blocked}
           onClick={() => finish(9)}
         >
           Finish as 9-hole round

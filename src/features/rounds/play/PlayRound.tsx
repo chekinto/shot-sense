@@ -69,25 +69,29 @@ export const PlayRound = ({ round, startHole }: PlayRoundProps) => {
         onJump={ctrl.goToHole}
       />
 
-      {ctrl.saveState === "error" ? (
-        <InlineNotice tone="error">
-          Couldn&rsquo;t save that change — check your connection. It will retry
-          when you next edit this hole.
+      {!ctrl.online ? (
+        <InlineNotice tone="info">
+          Offline — your round is saved on this device and will sync when you
+          reconnect.
         </InlineNotice>
+      ) : ctrl.pendingSync > 0 ? (
+        <p className={styles.syncNote} aria-live="polite">
+          Syncing {ctrl.pendingSync} change{ctrl.pendingSync === 1 ? "" : "s"}…
+        </p>
       ) : null}
 
       <HoleForm
         key={hole.holeNumber}
-        roundId={round.id}
         hole={hole}
         scoringZoneYards={round.scoringZoneYards}
         isLastPlannedHole={isLast}
         hasPrevious={ctrl.currentHole > 1}
         onPatch={ctrl.patchCurrentHole}
         onFlush={ctrl.flush}
+        onComplete={ctrl.completeHole}
         onPrevious={() => ctrl.goToHole(ctrl.currentHole - 1)}
         onCompleted={(next) => {
-          ctrl.setHoleLocally({ ...hole, isComplete: true });
+          // `completeHole` has already written the hole; just advance.
           if (next !== null) ctrl.goToHole(next);
         }}
       />
@@ -97,6 +101,8 @@ export const PlayRound = ({ round, startHole }: PlayRoundProps) => {
           roundId={round.id}
           plannedHoleCount={round.plannedHoleCount}
           completedHoleCount={completedHoleCount}
+          online={ctrl.online}
+          pendingSync={ctrl.pendingSync}
           onNeedsHole={ctrl.goToHole}
         />
       ) : null}
