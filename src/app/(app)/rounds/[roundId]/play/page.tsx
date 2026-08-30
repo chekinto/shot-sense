@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getPlayableRound } from "@/features/rounds/service";
+import { PlayRound } from "@/features/rounds/play/PlayRound";
 import styles from "./play.module.css";
 
 export const metadata = { title: "Play" };
@@ -12,47 +14,19 @@ const PlayRoundPage = async ({
   const { roundId } = await params;
   const round = await getPlayableRound(roundId);
 
-  const outPar = round.holes
-    .filter((h) => h.holeNumber <= 9)
-    .reduce((s, h) => s + h.par, 0);
-  const totalPar = round.holes.reduce((s, h) => s + h.par, 0);
+  if (round.status === "completed" || round.status === "abandoned") {
+    redirect(`/rounds/${roundId}/summary`);
+  }
+
+  const firstIncomplete = round.holes.find((h) => !h.isComplete)?.holeNumber;
+  const startHole = firstIncomplete ?? round.plannedHoleCount;
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>{round.courseName}</h1>
-          <p className={styles.meta}>
-            {round.teeName ? `${round.teeName} tees · ` : ""}
-            {round.plannedHoleCount} holes · par {totalPar}
-            {round.handicapAtStart !== null
-              ? ` · hcp ${round.handicapAtStart}`
-              : ""}
-          </p>
-        </div>
-        <Link href="/dashboard" className={styles.back}>
-          Dashboard
-        </Link>
-      </header>
-
-      <p className={styles.notice}>
-        Hole-by-hole recording arrives in the next update. Your round is saved and
-        will resume here.
-      </p>
-
-      <ol className={styles.holes}>
-        {round.holes.map((hole) => (
-          <li key={hole.holeNumber} className={styles.hole}>
-            <span className={styles.holeNo}>{hole.holeNumber}</span>
-            <span className={styles.holePar}>Par {hole.par}</span>
-            <span className={styles.holeYd}>
-              {hole.yardage !== null ? `${hole.yardage} yd` : "—"}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      <p className={styles.footNote}>Front nine par {outPar}.</p>
+    <div className={styles.wrap}>
+      <Link href="/dashboard" className={styles.back}>
+        ← Dashboard
+      </Link>
+      <PlayRound round={round} startHole={startHole} />
     </div>
   );
 };

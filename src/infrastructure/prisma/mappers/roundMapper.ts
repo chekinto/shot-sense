@@ -4,11 +4,21 @@ import type {
   RoundHole as PrismaRoundHole,
   RoundStatus as PrismaRoundStatus,
 } from "@prisma/client";
+import {
+  FIRST_PUTT_DISTANCE_BANDS,
+  type FirstPuttDistanceBand,
+} from "@/domain/scoring";
 import type {
   ActiveRound,
   PlayableRound,
   RoundStatus,
 } from "@/features/rounds/types";
+
+const asFirstPuttBand = (value: string | null): FirstPuttDistanceBand | null =>
+  value !== null &&
+  (FIRST_PUTT_DISTANCE_BANDS as readonly string[]).includes(value)
+    ? (value as FirstPuttDistanceBand)
+    : null;
 
 const STATUS_FROM_DB: Record<PrismaRoundStatus, RoundStatus> = {
   DRAFT: "draft",
@@ -55,6 +65,7 @@ export const toPlayableRound = (
   courseName: row.snapshot?.courseName ?? "Round",
   teeName: row.snapshot?.teeName ?? null,
   plannedHoleCount: row.plannedHoleCount,
+  completedHoleCount: row.holes.filter((h) => h.isComplete).length,
   scoringZoneYards: row.scoringZoneYards,
   handicapAtStart:
     row.handicapAtStart === null ? null : row.handicapAtStart.toNumber(),
@@ -66,5 +77,11 @@ export const toPlayableRound = (
       par: h.par,
       yardage: h.yardage,
       isComplete: h.isComplete,
+      version: h.version,
+      score: h.score,
+      shotsToZone: h.shotsToZone,
+      putts: h.putts,
+      firstPuttDistance: asFirstPuttBand(h.firstPuttDistance),
+      penaltyStrokes: h.penaltyStrokes,
     })),
 });

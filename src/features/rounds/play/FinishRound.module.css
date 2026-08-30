@@ -1,0 +1,17 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+
+.jump {
+  border: none;
+  background: none;
+  color: var(--color-danger);
+  font-weight: var(--weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}

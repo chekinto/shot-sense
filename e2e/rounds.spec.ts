@@ -29,13 +29,11 @@ test.describe("start a round", () => {
     await page.getByRole("button", { name: /start round/i }).click();
 
     await expect(page).toHaveURL(/\/rounds\/[0-9a-f-]+\/play$/);
-    await expect(page.getByRole("heading", { name: "Round Club" })).toBeVisible();
-    await expect(page.getByText(/blue tees/i)).toBeVisible();
+    await expect(page.getByText("Round Club · Blue")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /hole 1 of 9/i })).toBeVisible();
 
     // Hole 1 was snapshotted as a par 5 at 480 yards.
-    const holeOne = page.getByRole("listitem").filter({ hasText: /^1Par 5/ });
-    await expect(holeOne).toContainText("480 yd");
-    await expect(page.getByRole("listitem")).toHaveCount(9);
+    await expect(page.getByText("Par 5 · 480 yd")).toBeVisible();
 
     // Dashboard offers to resume it.
     await page.goto("/dashboard");
