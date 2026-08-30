@@ -187,6 +187,26 @@ exports[`scoring engine — golden output produces the canonical analysis for th
     "totalToZoneLeak": 4,
   },
   "methodologyVersion": "1.0.0",
+  "observations": [
+    {
+      "basis": "event-count",
+      "id": "penalties",
+      "text": "2 penalty strokes across 2 holes (4, 12).",
+      "weight": 110,
+    },
+    {
+      "basis": "event-count",
+      "id": "three-putts",
+      "text": "4 holes with 3 or more putts (6, 10, 14, 17). 3 from long range.",
+      "weight": 80,
+    },
+    {
+      "basis": "event-count",
+      "id": "blow-ups",
+      "text": "1 blow-up hole (triple bogey or worse): 14.",
+      "weight": 75,
+    },
+  ],
   "roundId": "canonical-round",
   "shotsToGetBack": {
     "bunker": 2,

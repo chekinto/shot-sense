@@ -8,13 +8,18 @@ const bump = async (page: Page, label: RegExp, times: number) => {
 
 const recordHole = async (
   page: Page,
-  values: { score: number; shotsToZone: number; putts: number },
+  values: { score: number; shotsToZone: number; putts: number; penalty?: number },
 ) => {
   await bump(page, /increase score/i, values.score);
   await bump(page, /increase shots to reach inside 100 yds/i, values.shotsToZone + 1);
   await bump(page, /increase putts/i, values.putts + 1);
   if (values.putts > 0) {
     await page.getByRole("radio", { name: /5–15/ }).click();
+  }
+  if (values.penalty) {
+    await page.getByRole("button", { name: /\+ penalty/i }).click();
+    // The penalty stepper starts at 0 (not null), so no +1 priming click.
+    await bump(page, /increase penalty strokes/i, values.penalty);
   }
 };
 
@@ -23,7 +28,7 @@ test.describe("record a round", () => {
   // Recording every hole is a lot of taps — give these room.
   test.describe.configure({ timeout: 120_000 });
 
-  test("record 9 holes, finish, see the score", async ({ page }) => {
+  test("record 9 holes, finish, see the post-round analysis", async ({ page }) => {
     await signUpAndOnboard(page, "record");
     await createCourse(page, { name: "Record CC", holeCount: 9 });
 
@@ -32,22 +37,43 @@ test.describe("record a round", () => {
     await page.getByRole("button", { name: /start round/i }).click();
     await expect(page).toHaveURL(/\/rounds\/[0-9a-f-]+\/play$/);
 
+    // 7 pars, a penalty double on hole 3, a 3-putt double on hole 5. Total 40 (+4).
     for (let holeNumber = 1; holeNumber <= 9; holeNumber += 1) {
       await expect(
         page.getByRole("heading", { name: new RegExp(`hole ${holeNumber} of 9`, "i") }),
       ).toBeVisible();
-      await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
-      await page
-        .getByRole("button", { name: /save (& next|hole)/i })
-        .click();
+      if (holeNumber === 3) {
+        await recordHole(page, { score: 6, shotsToZone: 3, putts: 2, penalty: 1 });
+      } else if (holeNumber === 5) {
+        await recordHole(page, { score: 6, shotsToZone: 2, putts: 3 });
+      } else {
+        await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
+      }
+      await page.getByRole("button", { name: /save (& next|hole)/i }).click();
     }
 
-    // The final hole shows its "Recorded" badge once completeHole resolves.
     await expect(page.getByText(/recorded/i)).toBeVisible();
     await page.getByRole("button", { name: /finish 9-hole round/i }).click();
     await expect(page).toHaveURL(/\/rounds\/[0-9a-f-]+\/summary$/);
-    await expect(page.getByText("36", { exact: true })).toBeVisible();
-    await expect(page.getByText(/level par/i)).toBeVisible();
+
+    // Score + benchmark scorecard.
+    await expect(page.getByText("40", { exact: true })).toBeVisible();
+    await expect(page.getByText("Played 9")).toBeVisible();
+    await expect(page.getByText(/entered in regulation/i)).toBeVisible();
+    await expect(page.getByText(/got down in three/i)).toBeVisible();
+    await expect(page.getByText(/where shots leaked/i)).toBeVisible();
+
+    // Shots to Get Back = 1 penalty + 1 putting.
+    const stgb = page.getByText("Shots to get back").locator("..");
+    await expect(stgb).toContainText("2");
+    await expect(stgb).toContainText("1 penalty");
+
+    // "This round" event-count observations.
+    await expect(page.getByText(/1 penalty stroke on hole 3/i)).toBeVisible();
+    await expect(page.getByText(/3 or more putts \(5\)/i)).toBeVisible();
+
+    // Your game tier is locked (first completed round).
+    await expect(page.getByText(/unlock after about 5 rounds — 4 to go/i)).toBeVisible();
   });
 
   test("returning to a recorded hole shows the editable form, not a summary", async ({

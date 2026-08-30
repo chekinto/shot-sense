@@ -1,0 +1,94 @@
+import { Prisma, type Round, type RoundHole } from "@prisma/client";
+import { toScoringRound } from "./scoringRoundMapper";
+
+const round = (overrides: Partial<Round> = {}): Round => ({
+  id: "round-1",
+  userId: "user-1",
+  courseId: "course-1",
+  teeSetId: null,
+  playedOn: new Date("2026-08-30"),
+  plannedHoleCount: 18,
+  completedHoleCount: 0,
+  handicapAtStart: new Prisma.Decimal("12.4"),
+  scoringZoneYards: 100,
+  status: "COMPLETED",
+  methodologyVersion: "1.0.0",
+  version: 1,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  completedAt: new Date(),
+  ...overrides,
+});
+
+const hole = (overrides: Partial<RoundHole>): RoundHole => ({
+  id: `h${overrides.holeNumber}`,
+  roundId: "round-1",
+  holeNumber: 1,
+  par: 4,
+  yardage: null,
+  score: 4,
+  shotsToZone: 2,
+  putts: 2,
+  firstPuttDistance: "5-15ft",
+  teeOutcome: null,
+  teeLie: null,
+  bunkerShots: 0,
+  bunkersVisited: 0,
+  penaltyStrokes: 0,
+  isComplete: true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  version: 1,
+  ...overrides,
+});
+
+describe("toScoringRound", () => {
+  it("includes only completed holes, sorted, validated", () => {
+    const scoring = toScoringRound({
+      ...round(),
+      holes: [
+        hole({ holeNumber: 3 }),
+        hole({ holeNumber: 1 }),
+        hole({ holeNumber: 2, isComplete: false }),
+      ],
+    });
+    expect(scoring.holes.map((h) => h.holeNumber)).toEqual([1, 3]);
+    expect(scoring.holes[0]?.status).toBe("completed");
+  });
+
+  it("carries handicap, methodology version and the fixed zone", () => {
+    const scoring = toScoringRound({ ...round(), holes: [hole({ holeNumber: 1 })] });
+    expect(scoring).toMatchObject({
+      handicapAtStart: 12.4,
+      methodologyVersion: "1.0.0",
+      scoringZoneYards: 100,
+    });
+  });
+
+  it("omits handicap when the round has none", () => {
+    const scoring = toScoringRound({
+      ...round({ handicapAtStart: null }),
+      holes: [hole({ holeNumber: 1 })],
+    });
+    expect(scoring.handicapAtStart).toBeUndefined();
+  });
+
+  it("drops the first-putt band when there were no putts", () => {
+    const scoring = toScoringRound({
+      ...round(),
+      holes: [
+        hole({ holeNumber: 1, score: 3, shotsToZone: 3, putts: 0, firstPuttDistance: "5-15ft" }),
+      ],
+    });
+    expect(scoring.holes[0]?.firstPuttDistance).toBeUndefined();
+  });
+
+  it("throws if a completed hole fails domain validation", () => {
+    expect(() =>
+      toScoringRound({
+        ...round(),
+        holes: [hole({ holeNumber: 1, score: 3, shotsToZone: 5 })],
+      }),
+    ).toThrow();
+  });
+});

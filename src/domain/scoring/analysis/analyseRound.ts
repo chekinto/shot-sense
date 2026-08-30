@@ -15,6 +15,10 @@ import {
   calculateRoundSummary,
   type RoundSummary,
 } from "../calculations/roundSummary";
+import {
+  generateRoundObservations,
+  type RoundObservation,
+} from "./observations";
 
 /**
  * §96 / §97 — the deterministic analysis of a completed round.
@@ -32,6 +36,8 @@ export interface RoundAnalysis {
   benchmark: BenchmarkScorecard;
   /** Round-wide approach success, excluding picked-up holes (§9 correction). */
   approach: ApproachSuccess;
+  /** "This round" tier — event-count facts only (correction #8). */
+  observations: RoundObservation[];
 }
 
 export const analyseRound = (round: CompletedRound): RoundAnalysis => {
@@ -46,5 +52,6 @@ export const analyseRound = (round: CompletedRound): RoundAnalysis => {
     shotsToGetBack: calculateRoundShotsToGetBack(round),
     benchmark: calculateBenchmarkScorecard(round),
     approach: calculateApproachSuccess(approachAttempts),
+    observations: generateRoundObservations(round),
   };
 };
