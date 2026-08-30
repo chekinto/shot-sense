@@ -1,61 +1,88 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { saveHole } from "../recordActions";
-import type { HolePatch, PlayHole, PlayableRound } from "../types";
+import { activeRoundStore } from "@/infrastructure/offline/activeRoundStore";
+import { flushRound, startBackgroundSync } from "@/infrastructure/offline/sync";
+import type {
+  CompleteHoleValues,
+  HolePatch,
+  PlayHole,
+  PlayableRound,
+} from "../types";
+import { useOnlineStatus } from "./useOnlineStatus";
 
-const DEBOUNCE_MS = 700;
-
-export type SaveState = "idle" | "saving" | "saved" | "error";
+const FLUSH_DEBOUNCE_MS = 1200;
 
 export interface PlayRoundController {
   round: PlayableRound;
   holes: Map<number, PlayHole>;
   currentHole: number;
-  saveState: SaveState;
+  online: boolean;
+  pendingSync: number;
   goToHole: (holeNumber: number) => void;
   patchCurrentHole: (patch: HolePatch) => void;
-  /** Force any queued autosave to persist now. */
+  completeHole: (
+    holeNumber: number,
+    values: CompleteHoleValues,
+  ) => Promise<{ completedHoleCount: number }>;
   flush: () => Promise<void>;
-  setHoleLocally: (hole: PlayHole) => void;
 }
 
 export const usePlayRound = (
   initial: PlayableRound,
   startHole: number,
 ): PlayRoundController => {
+  const online = useOnlineStatus();
   const [holes, setHoles] = useState<Map<number, PlayHole>>(
     () => new Map(initial.holes.map((h) => [h.holeNumber, h])),
   );
   const [currentHole, setCurrentHole] = useState(startHole);
-  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [pendingSync, setPendingSync] = useState(0);
 
-  // Accumulated unsaved patch for a single hole.
-  const queued = useRef<{ holeNumber: number; patch: HolePatch } | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const refreshPending = useCallback(async () => {
+    setPendingSync(await activeRoundStore.pendingCount(initial.id));
+  }, [initial.id]);
 
   const flush = useCallback(async () => {
-    if (timer.current) {
-      clearTimeout(timer.current);
-      timer.current = null;
+    if (flushTimer.current) {
+      clearTimeout(flushTimer.current);
+      flushTimer.current = null;
     }
-    const job = queued.current;
-    if (!job) return;
-    queued.current = null;
+    await flushRound(initial.id);
+    await refreshPending();
+  }, [initial.id, refreshPending]);
 
-    setSaveState("saving");
-    const result = await saveHole({
-      roundId: initial.id,
-      holeNumber: job.holeNumber,
-      patch: job.patch,
+  const scheduleFlush = useCallback(() => {
+    if (flushTimer.current) clearTimeout(flushTimer.current);
+    flushTimer.current = setTimeout(() => void flush(), FLUSH_DEBOUNCE_MS);
+  }, [flush]);
+
+  // Seed the local mirror from the server, then adopt any local-only edits.
+  // The ref makes this run once even under StrictMode's double-invoke.
+  const hydrated = useRef(false);
+  useEffect(() => {
+    if (hydrated.current) return;
+    hydrated.current = true;
+    void activeRoundStore.hydrate(initial).then((stored) => {
+      setHoles(new Map(stored.holes.map((h) => [h.holeNumber, h])));
+      // If the resume hole is already recorded locally (e.g. after an offline
+      // reload), jump to the first hole that still needs recording.
+      const firstIncomplete =
+        stored.holes.find((h) => !h.isComplete)?.holeNumber ??
+        stored.plannedHoleCount;
+      setCurrentHole((current) =>
+        stored.holes.find((h) => h.holeNumber === current)?.isComplete
+          ? firstIncomplete
+          : current,
+      );
+      void refreshPending();
     });
-    if (result.ok) {
-      setHoles((prev) => new Map(prev).set(job.holeNumber, result.hole));
-      setSaveState("saved");
-    } else {
-      setSaveState("error");
-    }
-  }, [initial.id]);
+  }, [initial, refreshPending]);
+
+  // Background sync while this screen is open.
+  useEffect(() => startBackgroundSync(), []);
 
   const patchCurrentHole = useCallback(
     (patch: HolePatch) => {
@@ -64,20 +91,29 @@ export const usePlayRound = (
         if (!existing) return prev;
         return new Map(prev).set(currentHole, { ...existing, ...patch });
       });
-
-      const job = queued.current;
-      queued.current = {
-        holeNumber: currentHole,
-        patch:
-          job && job.holeNumber === currentHole
-            ? { ...job.patch, ...patch }
-            : patch,
-      };
-
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => void flush(), DEBOUNCE_MS);
+      void activeRoundStore
+        .patchHole(initial.id, currentHole, patch)
+        .then((hole) => {
+          setHoles((prev) => new Map(prev).set(hole.holeNumber, hole));
+          return refreshPending();
+        });
+      scheduleFlush();
     },
-    [currentHole, flush],
+    [currentHole, initial.id, refreshPending, scheduleFlush],
+  );
+
+  const completeHole = useCallback(
+    async (holeNumber: number, values: CompleteHoleValues) => {
+      await activeRoundStore.patchHole(initial.id, holeNumber, values);
+      const { completedHoleCount, hole } = await activeRoundStore.completeHole(
+        initial.id,
+        holeNumber,
+      );
+      setHoles((prev) => new Map(prev).set(holeNumber, hole));
+      await flush();
+      return { completedHoleCount };
+    },
+    [initial.id, flush],
   );
 
   const goToHole = useCallback(
@@ -89,11 +125,6 @@ export const usePlayRound = (
     [currentHole, flush],
   );
 
-  const setHoleLocally = useCallback((hole: PlayHole) => {
-    setHoles((prev) => new Map(prev).set(hole.holeNumber, hole));
-  }, []);
-
-  // Persist anything queued when the tab is hidden or the component unmounts.
   useEffect(() => {
     const onHide = () => {
       if (document.visibilityState === "hidden") void flush();
@@ -109,10 +140,11 @@ export const usePlayRound = (
     round: initial,
     holes,
     currentHole,
-    saveState,
+    online,
+    pendingSync,
     goToHole,
     patchCurrentHole,
+    completeHole,
     flush,
-    setHoleLocally,
   };
 };

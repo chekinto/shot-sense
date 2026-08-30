@@ -13,8 +13,7 @@ import {
   validateCompletedHole,
   type FirstPuttDistanceBand,
 } from "@/domain/scoring";
-import { completeHole } from "../recordActions";
-import type { HolePatch, PlayHole } from "../types";
+import type { CompleteHoleValues, HolePatch, PlayHole } from "../types";
 import styles from "./HoleForm.module.css";
 
 const FIRST_PUTT_LABELS: Record<FirstPuttDistanceBand, string> = {
@@ -26,25 +25,25 @@ const FIRST_PUTT_LABELS: Record<FirstPuttDistanceBand, string> = {
 };
 
 interface HoleFormProps {
-  roundId: string;
   hole: PlayHole;
   scoringZoneYards: number;
   isLastPlannedHole: boolean;
   hasPrevious: boolean;
   onPatch: (patch: HolePatch) => void;
   onFlush: () => Promise<void>;
+  onComplete: (holeNumber: number, values: CompleteHoleValues) => Promise<unknown>;
   onPrevious: () => void;
   onCompleted: (nextHole: number | null) => void;
 }
 
 export const HoleForm = ({
-  roundId,
   hole,
   scoringZoneYards,
   isLastPlannedHole,
   hasPrevious,
   onPatch,
   onFlush,
+  onComplete,
   onPrevious,
   onCompleted,
 }: HoleFormProps) => {
@@ -82,19 +81,16 @@ export const HoleForm = ({
     }
 
     startTransition(async () => {
-      await onFlush();
-      const result = await completeHole({
-        roundId,
-        holeNumber: hole.holeNumber,
-        par: hole.par,
-        score: hole.score,
-        shotsToZone: hole.shotsToZone,
-        putts: hole.putts,
-        firstPuttDistance: hole.firstPuttDistance,
-        penaltyStrokes: hole.penaltyStrokes,
-      });
-      if (!result.ok) {
-        setErrors(result.errors.map((e) => e.message));
+      try {
+        await onComplete(hole.holeNumber, {
+          score: hole.score,
+          shotsToZone: hole.shotsToZone,
+          putts: hole.putts,
+          firstPuttDistance: hole.firstPuttDistance,
+          penaltyStrokes: hole.penaltyStrokes,
+        });
+      } catch {
+        setErrors(["Couldn't save that hole — try again."]);
         return;
       }
       onCompleted(isLastPlannedHole ? null : hole.holeNumber + 1);

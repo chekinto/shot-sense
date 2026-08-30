@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getOrCreateProfile } from "@/features/profile/service";
 import { hasCompletedOnboarding } from "@/features/profile/types";
 import { getActiveRound } from "@/features/rounds/service";
+import { LocalResumeCard } from "@/features/rounds/LocalResumeCard";
 import styles from "./page.module.css";
 
 export const metadata = { title: "Dashboard" };
@@ -15,6 +16,8 @@ const DashboardPage = async () => {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Your game</h1>
+
+      <LocalResumeCard />
 
       {!hasCompletedOnboarding(profile) ? (
         <section className={styles.card}>

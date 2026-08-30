@@ -1,16 +1,27 @@
 import { act, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { PlayRound } from "./PlayRound";
-import { saveHole } from "../recordActions";
 import type { PlayHole, PlayableRound } from "../types";
 
-jest.mock("../recordActions", () => ({
-  saveHole: jest.fn(async () => ({ ok: true })),
-  completeHole: jest.fn(async () => ({ ok: true, completedHoleCount: 0 })),
-  finishRound: jest.fn(async () => ({ ok: false, incompleteHoles: [] })),
+jest.mock("@/infrastructure/offline/sync", () => ({
+  flushRound: jest.fn(async () => "nothing"),
+  flushAll: jest.fn(async () => undefined),
+  startBackgroundSync: jest.fn(() => () => {}),
 }));
 
-const saveHoleMock = saveHole as jest.MockedFunction<typeof saveHole>;
+// The store has its own tests; here we only care about PlayRound's rendering.
+jest.mock("@/infrastructure/offline/activeRoundStore", () => ({
+  activeRoundStore: {
+    hydrate: jest.fn(async (r: { holes: unknown[] }) => ({ holes: r.holes })),
+    pendingCount: jest.fn(async () => 0),
+    patchHole: jest.fn(),
+    completeHole: jest.fn(async () => ({ completedHoleCount: 0, hole: {} })),
+  },
+}));
+
+// `recordActions` pulls in `next/cache` (server-only) — not needed here.
+jest.mock("../recordActions", () => ({
+  finishRound: jest.fn(async () => ({ ok: false, incompleteHoles: [] })),
+}));
 
 const playHole = (holeNumber: number): PlayHole => ({
   holeNumber,
@@ -37,36 +48,32 @@ const round: PlayableRound = {
   holes: [playHole(1), playHole(2)],
 };
 
-describe("PlayRound", () => {
-  it("renders the current hole without any save-state chatter", () => {
-    render(<PlayRound round={round} startHole={1} />);
+const setOnline = (value: boolean) => {
+  Object.defineProperty(navigator, "onLine", { value, configurable: true });
+  window.dispatchEvent(new Event(value ? "online" : "offline"));
+};
 
+afterEach(() => setOnline(true));
+
+describe("PlayRound", () => {
+  it("renders the current hole with no save-state chatter", async () => {
+    render(<PlayRound round={round} startHole={1} />);
     expect(
-      screen.getByRole("heading", { name: /hole 1 of 2/i }),
+      await screen.findByRole("heading", { name: /hole 1 of 2/i }),
     ).toBeInTheDocument();
     expect(screen.getByText("Test Links · White")).toBeInTheDocument();
     expect(screen.queryByText("Saved")).not.toBeInTheDocument();
     expect(screen.queryByText("Saving…")).not.toBeInTheDocument();
   });
 
-  it("surfaces an error notice only when an autosave fails", async () => {
-    jest.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    saveHoleMock.mockResolvedValueOnce({ ok: false, reason: "locked" });
-
+  it("shows an offline notice when the connection drops", async () => {
     render(<PlayRound round={round} startHole={1} />);
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await screen.findByRole("heading", { name: /hole 1 of 2/i });
 
-    await user.click(screen.getByRole("button", { name: /increase score/i }));
-    // Advance past the autosave debounce and let the (mocked) save settle.
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
+    act(() => setOnline(false));
 
     await waitFor(() =>
-      expect(screen.getByRole("alert")).toHaveTextContent(/couldn.t save/i),
+      expect(screen.getByText(/offline — your round is saved/i)).toBeInTheDocument(),
     );
-
-    jest.useRealTimers();
   });
 });

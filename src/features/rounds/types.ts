@@ -49,6 +49,15 @@ export interface HolePatch {
   penaltyStrokes?: number;
 }
 
+/** The full set of scoring values captured when a hole is marked complete. */
+export interface CompleteHoleValues {
+  score: number | null;
+  shotsToZone: number | null;
+  putts: number | null;
+  firstPuttDistance: FirstPuttDistanceBand | null;
+  penaltyStrokes: number;
+}
+
 /** Everything the play screen needs about a round. */
 export interface PlayableRound {
   id: string;
