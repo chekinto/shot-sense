@@ -12,6 +12,8 @@ const opToBody = (op: HoleSyncOp) => ({
   shotsToZone: op.shotsToZone,
   putts: op.putts,
   firstPuttDistance: op.firstPuttDistance,
+  teeOutcome: op.teeOutcome,
+  teeLie: op.teeLie,
   penaltyStrokes: op.penaltyStrokes,
   isComplete: op.isComplete,
 });

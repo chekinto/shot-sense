@@ -70,6 +70,10 @@ export {
   type ApproachSuccess,
 } from "./calculations/approachSuccess";
 export {
+  calculateTeeContext,
+  type TeeContext,
+} from "./calculations/teeContext";
+export {
   calculateRoundSummary,
   type RoundSummary,
   type SectionSummary,

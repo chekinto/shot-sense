@@ -84,6 +84,19 @@ describe("validateCompletedHole (§99)", () => {
     expect(result.ok).toBe(true);
   });
 
+  it("carries tee outcome and lie through without validating them (Epic 7)", () => {
+    const result = validateCompletedHole({
+      ...valid,
+      teeOutcome: "recovery-required",
+      teeLie: "trees-other",
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.hole.teeOutcome).toBe("recovery-required");
+      expect(result.hole.teeLie).toBe("trees-other");
+    }
+  });
+
   it("accepts a picked-up hole (§9 correction)", () => {
     const result = validateCompletedHole({
       ...valid,

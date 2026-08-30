@@ -16,6 +16,10 @@ import {
   type RoundSummary,
 } from "../calculations/roundSummary";
 import {
+  calculateTeeContext,
+  type TeeContext,
+} from "../calculations/teeContext";
+import {
   generateRoundObservations,
   type RoundObservation,
 } from "./observations";
@@ -36,6 +40,8 @@ export interface RoundAnalysis {
   benchmark: BenchmarkScorecard;
   /** Round-wide approach success, excluding picked-up holes (§9 correction). */
   approach: ApproachSuccess;
+  /** Tee-shot picture, judged by consequence (§29–31). Event counts only. */
+  tee: TeeContext;
   /** "This round" tier — event-count facts only (correction #8). */
   observations: RoundObservation[];
 }
@@ -52,6 +58,7 @@ export const analyseRound = (round: CompletedRound): RoundAnalysis => {
     shotsToGetBack: calculateRoundShotsToGetBack(round),
     benchmark: calculateBenchmarkScorecard(round),
     approach: calculateApproachSuccess(approachAttempts),
+    tee: calculateTeeContext(round),
     observations: generateRoundObservations(round),
   };
 };

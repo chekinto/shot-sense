@@ -73,6 +73,21 @@ describe("toScoringRound", () => {
     expect(scoring.handicapAtStart).toBeUndefined();
   });
 
+  it("carries tee outcome and lie through to the scoring hole (Epic 7)", () => {
+    const scoring = toScoringRound({
+      ...round(),
+      holes: [
+        hole({ holeNumber: 1, teeOutcome: "compromised", teeLie: "rough" }),
+        hole({ holeNumber: 2, teeOutcome: "not-a-real-value" }),
+      ],
+    });
+    expect(scoring.holes[0]).toMatchObject({
+      teeOutcome: "compromised",
+      teeLie: "rough",
+    });
+    expect(scoring.holes[1]?.teeOutcome).toBeUndefined();
+  });
+
   it("drops the first-putt band when there were no putts", () => {
     const scoring = toScoringRound({
       ...round(),

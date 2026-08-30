@@ -27,6 +27,8 @@ const hole = (
     shotsToZone: number | null;
     putts: number | null;
     firstPuttDistance: string | null;
+    teeOutcome: string | null;
+    teeLie: string | null;
     penaltyStrokes: number;
   }> = {},
 ) => ({
@@ -143,5 +145,21 @@ describe("toPlayableRound", () => {
       holes: [hole(1, true, { putts: 1, firstPuttDistance: "garbage" })],
     });
     expect(playable.holes[0]?.firstPuttDistance).toBeNull();
+  });
+
+  it("carries tee outcome and lie, and nulls unrecognised values", () => {
+    const playable = toPlayableRound({
+      ...baseRound,
+      snapshot: null,
+      holes: [
+        hole(1, true, { teeOutcome: "recovery-required", teeLie: "rough" }),
+        hole(2, false, { teeOutcome: "garbage", teeLie: null }),
+      ],
+    });
+    expect(playable.holes[0]).toMatchObject({
+      teeOutcome: "recovery-required",
+      teeLie: "rough",
+    });
+    expect(playable.holes[1]).toMatchObject({ teeOutcome: null, teeLie: null });
   });
 });

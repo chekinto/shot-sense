@@ -75,9 +75,21 @@
 .stgbNote,
 .locked,
 .leaksTitle,
+.teeNote,
 .clean {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
+}
+
+.teeBreakdown {
+  font-size: var(--text-base);
+  font-weight: var(--weight-medium);
+}
+
+.teeCostly {
+  margin-top: var(--space-1);
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
 }
 
 .benchmarkGrid {

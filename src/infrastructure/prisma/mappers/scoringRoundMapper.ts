@@ -5,9 +5,13 @@ import type {
 import {
   FIRST_PUTT_DISTANCE_BANDS,
   SCORING_ZONE_YARDS,
+  TEE_LIES,
+  TEE_OUTCOMES,
   assertCompletedHole,
   type CompletedRound,
   type FirstPuttDistanceBand,
+  type TeeLie,
+  type TeeOutcome,
 } from "@/domain/scoring";
 
 const asBand = (value: string | null): FirstPuttDistanceBand | undefined =>
@@ -16,14 +20,25 @@ const asBand = (value: string | null): FirstPuttDistanceBand | undefined =>
     ? (value as FirstPuttDistanceBand)
     : undefined;
 
+const asTeeOutcome = (value: string | null): TeeOutcome | undefined =>
+  value !== null && (TEE_OUTCOMES as readonly string[]).includes(value)
+    ? (value as TeeOutcome)
+    : undefined;
+
+const asTeeLie = (value: string | null): TeeLie | undefined =>
+  value !== null && (TEE_LIES as readonly string[]).includes(value)
+    ? (value as TeeLie)
+    : undefined;
+
 /**
  * §101 — Prisma completed round -> the domain `CompletedRound` the scoring
  * engine consumes. Only `isComplete` holes are included; each is validated on
  * the way in (`assertCompletedHole`) — a hole marked complete has already
  * passed the same validator server-side, so this is a defensive backstop.
  *
- * Tee outcome/lie, approach attempts and mistakes join in Epics 8–9; for now
- * they are empty. `pickedUp` has no column yet — always `false`.
+ * Tee outcome/lie are carried through (Epic 7). Approach attempts and mistakes
+ * join in Epics 8–9; for now they are empty. `pickedUp` has no column yet —
+ * always `false`.
  */
 export const toScoringRound = (
   round: PrismaRound & { holes: PrismaRoundHole[] },
@@ -46,6 +61,8 @@ export const toScoringRound = (
         penaltyStrokes: h.penaltyStrokes,
         bunkerShots: h.bunkerShots,
         bunkersVisited: h.bunkersVisited,
+        teeOutcome: asTeeOutcome(h.teeOutcome),
+        teeLie: asTeeLie(h.teeLie),
       }),
     );
 

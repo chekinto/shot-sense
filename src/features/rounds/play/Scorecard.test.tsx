@@ -13,6 +13,8 @@ const hole = (n: number, isComplete: boolean, score: number | null): PlayHole =>
   shotsToZone: null,
   putts: null,
   firstPuttDistance: null,
+  teeOutcome: null,
+  teeLie: null,
   penaltyStrokes: 0,
 });
 

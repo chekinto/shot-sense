@@ -67,6 +67,54 @@ describe("generateRoundObservations", () => {
     expect(obs[0]?.id).toBe("penalties");
   });
 
+  it("calls out costly tee shots and notes the penalties among them", () => {
+    const holes = eighteenPars().map((h, i) => {
+      if (i === 3)
+        return completedHole({
+          holeNumber: 4,
+          score: 6,
+          shotsToZone: 3,
+          putts: 2,
+          penaltyStrokes: 1,
+          teeOutcome: "penalty",
+        });
+      if (i === 6)
+        return completedHole({
+          holeNumber: 7,
+          score: 5,
+          shotsToZone: 3,
+          putts: 2,
+          teeOutcome: "recovery-required",
+        });
+      return h;
+    });
+    const tee = generateRoundObservations(completedRound(holes)).find(
+      (o) => o.id === "tee-shots",
+    );
+    expect(tee?.text).toMatch(/2 tee shots put you out of position/i);
+    expect(tee?.text).toMatch(/holes 4, 7/);
+    expect(tee?.text).toMatch(/1 of them drew a penalty stroke/i);
+  });
+
+  it("does not flag tee shots when only one was costly", () => {
+    const holes = eighteenPars().map((h, i) =>
+      i === 6
+        ? completedHole({
+            holeNumber: 7,
+            score: 5,
+            shotsToZone: 3,
+            putts: 2,
+            teeOutcome: "recovery-required",
+          })
+        : h,
+    );
+    expect(
+      generateRoundObservations(completedRound(holes)).some(
+        (o) => o.id === "tee-shots",
+      ),
+    ).toBe(false);
+  });
+
   it("only produces event-count observations (no rate claims)", () => {
     const holes = eighteenPars().map((h, i) =>
       i === 0 ? completedHole({ holeNumber: 1, score: 6, shotsToZone: 3, putts: 2, penaltyStrokes: 1 }) : h,

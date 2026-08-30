@@ -13,8 +13,8 @@ const round: PlayableRound = {
   handicapAtStart: null,
   status: "in-progress",
   holes: [
-    { holeNumber: 1, par: 4, yardage: null, isComplete: false, version: 1, score: null, shotsToZone: null, putts: null, firstPuttDistance: null, penaltyStrokes: 0 },
-    { holeNumber: 2, par: 4, yardage: null, isComplete: false, version: 1, score: null, shotsToZone: null, putts: null, firstPuttDistance: null, penaltyStrokes: 0 },
+    { holeNumber: 1, par: 4, yardage: null, isComplete: false, version: 1, score: null, shotsToZone: null, putts: null, firstPuttDistance: null, teeOutcome: null, teeLie: null, penaltyStrokes: 0 },
+    { holeNumber: 2, par: 4, yardage: null, isComplete: false, version: 1, score: null, shotsToZone: null, putts: null, firstPuttDistance: null, teeOutcome: null, teeLie: null, penaltyStrokes: 0 },
   ],
 };
 

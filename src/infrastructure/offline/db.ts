@@ -30,6 +30,8 @@ export interface HoleSyncOp {
   shotsToZone: number | null;
   putts: number | null;
   firstPuttDistance: PlayHole["firstPuttDistance"];
+  teeOutcome: PlayHole["teeOutcome"];
+  teeLie: PlayHole["teeLie"];
   penaltyStrokes: number;
   isComplete: boolean;
   updatedAt: number;

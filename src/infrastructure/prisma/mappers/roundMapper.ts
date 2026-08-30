@@ -6,7 +6,11 @@ import type {
 } from "@prisma/client";
 import {
   FIRST_PUTT_DISTANCE_BANDS,
+  TEE_LIES,
+  TEE_OUTCOMES,
   type FirstPuttDistanceBand,
+  type TeeLie,
+  type TeeOutcome,
 } from "@/domain/scoring";
 import type {
   ActiveRound,
@@ -18,6 +22,16 @@ const asFirstPuttBand = (value: string | null): FirstPuttDistanceBand | null =>
   value !== null &&
   (FIRST_PUTT_DISTANCE_BANDS as readonly string[]).includes(value)
     ? (value as FirstPuttDistanceBand)
+    : null;
+
+const asTeeOutcome = (value: string | null): TeeOutcome | null =>
+  value !== null && (TEE_OUTCOMES as readonly string[]).includes(value)
+    ? (value as TeeOutcome)
+    : null;
+
+const asTeeLie = (value: string | null): TeeLie | null =>
+  value !== null && (TEE_LIES as readonly string[]).includes(value)
+    ? (value as TeeLie)
     : null;
 
 const STATUS_FROM_DB: Record<PrismaRoundStatus, RoundStatus> = {
@@ -82,6 +96,8 @@ export const toPlayableRound = (
       shotsToZone: h.shotsToZone,
       putts: h.putts,
       firstPuttDistance: asFirstPuttBand(h.firstPuttDistance),
+      teeOutcome: asTeeOutcome(h.teeOutcome),
+      teeLie: asTeeLie(h.teeLie),
       penaltyStrokes: h.penaltyStrokes,
     })),
 });

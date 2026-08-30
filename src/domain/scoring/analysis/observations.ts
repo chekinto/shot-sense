@@ -90,6 +90,29 @@ const bunkerObservation = (
   };
 };
 
+const teeShotObservation = (
+  holes: readonly CompletedScoringHole[],
+): RoundObservation | null => {
+  const costly = holes.filter(
+    (h) => h.teeOutcome === "recovery-required" || h.teeOutcome === "penalty",
+  );
+  if (costly.length < 2) return null;
+  const penalties = costly.filter(
+    (h) => h.teeOutcome === "penalty" && h.penaltyStrokes > 0,
+  ).length;
+
+  let text = `${costly.length} tee shots put you out of position this round (holes ${holeNumbers([...costly])}).`;
+  if (penalties > 0) {
+    text += ` ${penalties} of them ${penalties === 1 ? "drew a penalty stroke" : "drew penalty strokes"}.`;
+  }
+  return {
+    id: "tee-shots",
+    basis: "event-count",
+    text,
+    weight: 65 + costly.length * 5,
+  };
+};
+
 const nineSplitObservation = (
   round: CompletedRound,
 ): RoundObservation | null => {
@@ -139,6 +162,7 @@ export const generateRoundObservations = (
     blowUpObservation(played),
     threePuttObservation(played),
     bunkerObservation(played),
+    teeShotObservation(played),
     nineSplitObservation(round),
     tidyRoundObservation(played),
   ].filter((o): o is RoundObservation => o !== null);
