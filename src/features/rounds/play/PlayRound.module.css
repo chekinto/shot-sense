@@ -47,18 +47,3 @@
   font-size: var(--text-xs);
   color: var(--color-text-muted);
 }
-
-.saveState {
-  min-height: 1.25rem;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-}
-
-.nav {
-  display: flex;
-  gap: var(--space-3);
-}
-
-.nav > * {
-  flex: 1;
-}

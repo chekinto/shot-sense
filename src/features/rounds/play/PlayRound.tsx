@@ -1,20 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
-import { Button } from "@/components/ui";
+import { InlineNotice } from "@/components/ui";
 import type { PlayableRound } from "../types";
-import { usePlayRound, type SaveState } from "./usePlayRound";
+import { usePlayRound } from "./usePlayRound";
 import { HoleForm } from "./HoleForm";
 import { Scorecard } from "./Scorecard";
 import { FinishRound } from "./FinishRound";
 import styles from "./PlayRound.module.css";
-
-const SAVE_LABEL: Record<SaveState, string> = {
-  idle: "",
-  saving: "Saving…",
-  saved: "Saved",
-  error: "Save failed — retrying on next change",
-};
 
 interface PlayRoundProps {
   round: PlayableRound;
@@ -76,9 +69,12 @@ export const PlayRound = ({ round, startHole }: PlayRoundProps) => {
         onJump={ctrl.goToHole}
       />
 
-      <div className={styles.saveState} aria-live="polite">
-        {SAVE_LABEL[ctrl.saveState]}
-      </div>
+      {ctrl.saveState === "error" ? (
+        <InlineNotice tone="error">
+          Couldn&rsquo;t save that change — check your connection. It will retry
+          when you next edit this hole.
+        </InlineNotice>
+      ) : null}
 
       <HoleForm
         key={hole.holeNumber}
@@ -86,31 +82,15 @@ export const PlayRound = ({ round, startHole }: PlayRoundProps) => {
         hole={hole}
         scoringZoneYards={round.scoringZoneYards}
         isLastPlannedHole={isLast}
+        hasPrevious={ctrl.currentHole > 1}
         onPatch={ctrl.patchCurrentHole}
         onFlush={ctrl.flush}
-        onHoleUpdated={ctrl.setHoleLocally}
+        onPrevious={() => ctrl.goToHole(ctrl.currentHole - 1)}
         onCompleted={(next) => {
           ctrl.setHoleLocally({ ...hole, isComplete: true });
           if (next !== null) ctrl.goToHole(next);
         }}
       />
-
-      <div className={styles.nav}>
-        <Button
-          variant="secondary"
-          disabled={ctrl.currentHole <= 1}
-          onClick={() => ctrl.goToHole(ctrl.currentHole - 1)}
-        >
-          ← Previous
-        </Button>
-        <Button
-          variant="secondary"
-          disabled={isLast}
-          onClick={() => ctrl.goToHole(ctrl.currentHole + 1)}
-        >
-          Next →
-        </Button>
-      </div>
 
       {isLast || completedHoleCount >= round.plannedHoleCount ? (
         <FinishRound

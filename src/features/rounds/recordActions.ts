@@ -97,21 +97,6 @@ export const completeHole = async (input: {
   return { ok: true, completedHoleCount };
 };
 
-/** Re-open a completed hole for editing during the round (§119). */
-export const reopenHole = async (input: {
-  roundId: string;
-  holeNumber: number;
-}): Promise<void> => {
-  const user = await requireUser();
-  await roundRepository.setHoleComplete(
-    user.id,
-    input.roundId,
-    input.holeNumber,
-    false,
-  );
-  revalidatePath(`/rounds/${input.roundId}/play`);
-};
-
 export type FinishRoundResult = { ok: false; incompleteHoles: number[] };
 
 /**

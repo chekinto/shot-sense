@@ -13,15 +13,15 @@ import {
   validateCompletedHole,
   type FirstPuttDistanceBand,
 } from "@/domain/scoring";
-import { completeHole, reopenHole } from "../recordActions";
+import { completeHole } from "../recordActions";
 import type { HolePatch, PlayHole } from "../types";
 import styles from "./HoleForm.module.css";
 
 const FIRST_PUTT_LABELS: Record<FirstPuttDistanceBand, string> = {
   "under-5ft": "< 5 ft",
-  "5-15ft": "5–15  ft",
-  "15-30ft": "15–30  ft",
-  "30-50ft": "30–50  ft",
+  "5-15ft": "5–15 ft",
+  "15-30ft": "15–30 ft",
+  "30-50ft": "30–50 ft",
   "50ft-plus": "50+ ft",
 };
 
@@ -30,10 +30,11 @@ interface HoleFormProps {
   hole: PlayHole;
   scoringZoneYards: number;
   isLastPlannedHole: boolean;
+  hasPrevious: boolean;
   onPatch: (patch: HolePatch) => void;
   onFlush: () => Promise<void>;
+  onPrevious: () => void;
   onCompleted: (nextHole: number | null) => void;
-  onHoleUpdated: (hole: PlayHole) => void;
 }
 
 export const HoleForm = ({
@@ -41,10 +42,11 @@ export const HoleForm = ({
   hole,
   scoringZoneYards,
   isLastPlannedHole,
+  hasPrevious,
   onPatch,
   onFlush,
+  onPrevious,
   onCompleted,
-  onHoleUpdated,
 }: HoleFormProps) => {
   const [errors, setErrors] = useState<string[]>([]);
   const [showPenalty, setShowPenalty] = useState(hole.penaltyStrokes > 0);
@@ -99,34 +101,33 @@ export const HoleForm = ({
     });
   };
 
-  if (hole.isComplete) {
-    return (
-      <div className={styles.done}>
-        <p className={styles.doneSummary}>
-          Score {hole.score} · to zone {hole.shotsToZone} · from zone{" "}
-          {shotsFromZone} · {hole.putts} putt{hole.putts === 1 ? "" : "s"}
-          {hole.penaltyStrokes > 0
-            ? ` · ${hole.penaltyStrokes} penalty`
-            : ""}
-        </p>
-        <Button
-          variant="secondary"
-          disabled={pending}
-          onClick={() =>
-            startTransition(async () => {
-              await reopenHole({ roundId, holeNumber: hole.holeNumber });
-              onHoleUpdated({ ...hole, isComplete: false });
-            })
-          }
-        >
-          Edit hole
-        </Button>
-      </div>
-    );
-  }
+  // "Next" carries the save: an unrecorded hole is validated + completed before
+  // advancing; an already-recorded hole (autosave has it) just moves on.
+  const goNext = () => {
+    if (hole.isComplete) {
+      void onFlush();
+      onCompleted(isLastPlannedHole ? null : hole.holeNumber + 1);
+      return;
+    }
+    save();
+  };
+
+  const nextLabel = pending
+    ? "Saving…"
+    : hole.isComplete
+      ? "Next →"
+      : isLastPlannedHole
+        ? "Save hole"
+        : "Save & next →";
+
+  const hideNext = isLastPlannedHole && hole.isComplete;
 
   return (
     <div className={styles.form}>
+      {hole.isComplete ? (
+        <p className={styles.recorded}>✓ Recorded — edits save automatically</p>
+      ) : null}
+
       {errors.length > 0 ? (
         <InlineNotice tone="error">{errors[0]}</InlineNotice>
       ) : null}
@@ -155,8 +156,7 @@ export const HoleForm = ({
       />
 
       <p className={styles.derived}>
-        Shots from zone:{" "}
-        <strong>{shotsFromZone ?? "—"}</strong>
+        Shots from zone: <strong>{shotsFromZone ?? "—"}</strong>
         <span className={styles.derivedNote}> (includes putts)</span>
       </p>
 
@@ -168,9 +168,7 @@ export const HoleForm = ({
         placeholder="—"
         onChange={(putts) =>
           onPatch(
-            putts === 0
-              ? { putts, firstPuttDistance: null }
-              : { putts },
+            putts === 0 ? { putts, firstPuttDistance: null } : { putts },
           )
         }
       />
@@ -206,13 +204,20 @@ export const HoleForm = ({
         </button>
       )}
 
-      <Button fullWidth disabled={pending} onClick={save}>
-        {pending
-          ? "Saving…"
-          : isLastPlannedHole
-            ? "Save hole"
-            : "Save & next hole"}
-      </Button>
+      <div className={styles.nav}>
+        <Button
+          variant="secondary"
+          disabled={!hasPrevious || pending}
+          onClick={onPrevious}
+        >
+          ← Previous
+        </Button>
+        {hideNext ? null : (
+          <Button disabled={pending} onClick={goNext}>
+            {nextLabel}
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

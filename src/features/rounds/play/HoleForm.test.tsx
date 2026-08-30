@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { HoleForm } from "./HoleForm";
@@ -6,7 +7,6 @@ import type { PlayHole } from "../types";
 
 jest.mock("../recordActions", () => ({
   completeHole: jest.fn(async () => ({ ok: true, completedHoleCount: 1 })),
-  reopenHole: jest.fn(async () => undefined),
 }));
 
 const completeHoleMock = completeHole as jest.MockedFunction<typeof completeHole>;
@@ -28,17 +28,22 @@ const hole = (overrides: Partial<PlayHole> = {}): PlayHole => ({
 const noop = () => {};
 const asyncNoop = async () => {};
 
-const renderForm = (h: PlayHole, onPatch = jest.fn()) =>
+const renderForm = (
+  h: PlayHole,
+  extra: Partial<ComponentProps<typeof HoleForm>> = {},
+) =>
   render(
     <HoleForm
       roundId="r1"
       hole={h}
       scoringZoneYards={100}
       isLastPlannedHole={false}
-      onPatch={onPatch}
+      hasPrevious
+      onPatch={jest.fn()}
       onFlush={asyncNoop}
+      onPrevious={noop}
       onCompleted={noop}
-      onHoleUpdated={noop}
+      {...extra}
     />,
   );
 
@@ -79,7 +84,7 @@ describe("HoleForm", () => {
   it("blocks completion with a validation message when the hole is incomplete", async () => {
     const user = userEvent.setup();
     renderForm(hole({ score: null }));
-    await user.click(screen.getByRole("button", { name: /save & next hole/i }));
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(completeHoleMock).not.toHaveBeenCalled();
   });
@@ -89,15 +94,67 @@ describe("HoleForm", () => {
     renderForm(
       hole({ score: 4, shotsToZone: 2, putts: 2, firstPuttDistance: "5-15ft" }),
     );
-    await user.click(screen.getByRole("button", { name: /save & next hole/i }));
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
     expect(completeHoleMock).toHaveBeenCalledWith(
       expect.objectContaining({ roundId: "r1", holeNumber: 1, score: 4 }),
     );
   });
 
-  it("renders a summary and an edit button when the hole is already complete", () => {
-    renderForm(hole({ isComplete: true, score: 4, shotsToZone: 2, putts: 2 }));
-    expect(screen.getByText(/score 4/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /edit hole/i })).toBeInTheDocument();
+  it("stays an editable form with its values filled when the hole is complete", () => {
+    renderForm(
+      hole({
+        isComplete: true,
+        score: 4,
+        shotsToZone: 2,
+        putts: 2,
+        firstPuttDistance: "5-15ft",
+      }),
+    );
+    // Still the live form, not a read-only summary.
+    expect(screen.getByRole("group", { name: "Score" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("radiogroup", { name: /first putt distance/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/recorded/i)).toBeInTheDocument();
+    // "Next" carries the advance; no separate save button, no "Edit hole".
+    expect(screen.getByRole("button", { name: /^next/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /edit hole/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /save & next/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("has Previous and a save-carrying Next, and no third button", () => {
+    renderForm(hole());
+    const buttons = screen
+      .getAllByRole("button")
+      .map((b) => b.textContent?.trim());
+    expect(buttons).toEqual(
+      expect.arrayContaining(["← Previous", "Save & next →"]),
+    );
+    expect(buttons).not.toContain("Next →");
+  });
+
+  it("disables Previous on the first hole", () => {
+    renderForm(hole(), { hasPrevious: false });
+    expect(screen.getByRole("button", { name: /previous/i })).toBeDisabled();
+  });
+
+  it("goes back without completing when Previous is pressed", async () => {
+    const user = userEvent.setup();
+    const onPrevious = jest.fn();
+    renderForm(hole({ score: null }), { onPrevious });
+    await user.click(screen.getByRole("button", { name: /previous/i }));
+    expect(onPrevious).toHaveBeenCalled();
+    expect(completeHoleMock).not.toHaveBeenCalled();
+  });
+
+  it("shows the recorded value in the Score stepper", () => {
+    renderForm(hole({ isComplete: true, score: 6, shotsToZone: 3, putts: 2 }));
+    expect(
+      screen.getByRole("group", { name: "Score" }),
+    ).toHaveTextContent("6");
   });
 });

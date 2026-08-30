@@ -1,7 +1,11 @@
 import "server-only";
 import { prisma } from "../client";
 import { toActiveRound, toPlayableRound } from "../mappers/roundMapper";
-import { METHODOLOGY_VERSION, SCORING_ZONE_YARDS } from "@/domain/scoring";
+import {
+  METHODOLOGY_VERSION,
+  SCORING_ZONE_YARDS,
+  validateCompletedHole,
+} from "@/domain/scoring";
 import type {
   ActiveRound,
   HolePatch,
@@ -118,10 +122,33 @@ export const roundRepository = {
       throw new StaleHoleError();
     }
 
-    const row = await prisma.roundHole.update({
+    let row = await prisma.roundHole.update({
       where: { roundId_holeNumber: { roundId, holeNumber } },
       data: { ...patch, version: { increment: 1 } },
     });
+
+    // A previously-completed hole that an edit has made invalid drops back to
+    // incomplete (never auto-completed — that stays an explicit Save, §24).
+    if (row.isComplete) {
+      const stillValid = validateCompletedHole({
+        holeNumber: row.holeNumber,
+        par: row.par,
+        score: row.score ?? undefined,
+        shotsToZone: row.shotsToZone ?? undefined,
+        putts: row.putts ?? undefined,
+        firstPuttDistance:
+          (row.firstPuttDistance as PlayHole["firstPuttDistance"]) ?? undefined,
+        penaltyStrokes: row.penaltyStrokes,
+      }).ok;
+      if (!stillValid) {
+        row = await prisma.roundHole.update({
+          where: { roundId_holeNumber: { roundId, holeNumber } },
+          data: { isComplete: false },
+        });
+        await recomputeCompletedCount(roundId);
+      }
+    }
+
     return {
       holeNumber: row.holeNumber,
       par: row.par,
@@ -145,21 +172,11 @@ export const roundRepository = {
     isComplete: boolean,
   ): Promise<{ completedHoleCount: number }> {
     await assertEditable(userId, roundId);
-
-    return prisma.$transaction(async (tx) => {
-      await tx.roundHole.update({
-        where: { roundId_holeNumber: { roundId, holeNumber } },
-        data: { isComplete, version: { increment: 1 } },
-      });
-      const completedHoleCount = await tx.roundHole.count({
-        where: { roundId, isComplete: true },
-      });
-      await tx.round.update({
-        where: { id: roundId },
-        data: { completedHoleCount },
-      });
-      return { completedHoleCount };
+    await prisma.roundHole.update({
+      where: { roundId_holeNumber: { roundId, holeNumber } },
+      data: { isComplete, version: { increment: 1 } },
     });
+    return { completedHoleCount: await recomputeCompletedCount(roundId) };
   },
 
   /** Completes the round (§20 — may be fewer holes than planned). */
@@ -192,6 +209,18 @@ const assertEditable = async (
   if (!round || (round.status !== "IN_PROGRESS" && round.status !== "PAUSED")) {
     throw new RoundNotEditableError();
   }
+};
+
+/** Re-derive and store `rounds.completed_hole_count` from the hole rows. */
+const recomputeCompletedCount = async (roundId: string): Promise<number> => {
+  const completedHoleCount = await prisma.roundHole.count({
+    where: { roundId, isComplete: true },
+  });
+  await prisma.round.update({
+    where: { id: roundId },
+    data: { completedHoleCount },
+  });
+  return completedHoleCount;
 };
 
 export type RoundRepository = typeof roundRepository;

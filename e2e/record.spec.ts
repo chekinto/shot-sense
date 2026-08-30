@@ -20,6 +20,8 @@ const recordHole = async (
 
 test.describe("record a round", () => {
   test.skip(!supabaseConfigured, "needs a Supabase test project");
+  // Recording every hole is a lot of taps — give these room.
+  test.describe.configure({ timeout: 120_000 });
 
   test("record 9 holes, finish, see the score", async ({ page }) => {
     await signUpAndOnboard(page, "record");
@@ -36,16 +38,43 @@ test.describe("record a round", () => {
       ).toBeVisible();
       await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
       await page
-        .getByRole("button", { name: /save (& next hole|hole)/i })
+        .getByRole("button", { name: /save (& next|hole)/i })
         .click();
     }
 
-    // The final hole shows its saved summary once completeHole resolves.
-    await expect(page.getByText(/score 4 · to zone 2/i)).toBeVisible();
+    // The final hole shows its "Recorded" badge once completeHole resolves.
+    await expect(page.getByText(/recorded/i)).toBeVisible();
     await page.getByRole("button", { name: /finish 9-hole round/i }).click();
     await expect(page).toHaveURL(/\/rounds\/[0-9a-f-]+\/summary$/);
     await expect(page.getByText("36", { exact: true })).toBeVisible();
     await expect(page.getByText(/level par/i)).toBeVisible();
+  });
+
+  test("returning to a recorded hole shows the editable form, not a summary", async ({
+    page,
+  }) => {
+    await signUpAndOnboard(page, "reedit");
+    await createCourse(page, { name: "Reedit CC", holeCount: 9 });
+
+    await page.goto("/rounds/new");
+    await page.getByRole("radio", { name: /reedit cc/i }).click();
+    await page.getByRole("button", { name: /start round/i }).click();
+
+    await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
+    await page.getByRole("button", { name: /save & next/i }).click();
+    await expect(page.getByRole("heading", { name: /hole 2 of 9/i })).toBeVisible();
+
+    // Jump back to hole 1 — straight into the form with its values, no Edit button.
+    await page.getByRole("button", { name: /^1/ }).first().click();
+    await expect(page.getByText(/recorded/i)).toBeVisible();
+    await expect(page.getByRole("group", { name: "Score" })).toHaveText(/4/);
+    await expect(
+      page.getByRole("button", { name: /edit hole/i }),
+    ).toHaveCount(0);
+
+    // Bump the score straight away; it autosaves.
+    await page.getByRole("button", { name: /increase score/i }).click();
+    await expect(page.getByRole("group", { name: "Score" })).toHaveText(/5/);
   });
 
   test("finishing early lists the holes that still need recording", async ({
@@ -60,7 +89,7 @@ test.describe("record a round", () => {
 
     // Record hole 1 only, then jump to the last hole and try to finish.
     await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
-    await page.getByRole("button", { name: /save & next hole/i }).click();
+    await page.getByRole("button", { name: /save & next/i }).click();
 
     await page.getByRole("button", { name: "9" }).click();
     await expect(
