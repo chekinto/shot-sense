@@ -47,6 +47,7 @@ const upsertSyncOp = async (
     firstPuttDistance: hole.firstPuttDistance,
     teeOutcome: hole.teeOutcome,
     teeLie: hole.teeLie,
+    approaches: hole.approaches,
     penaltyStrokes: hole.penaltyStrokes,
     isComplete: hole.isComplete,
     updatedAt: Date.now(),

@@ -30,6 +30,14 @@ const hole = (
     teeOutcome: string | null;
     teeLie: string | null;
     penaltyStrokes: number;
+    approaches: {
+      id: string;
+      roundHoleId: string;
+      sequence: number;
+      distanceBand: string;
+      result: string;
+      missDirection: string | null;
+    }[];
   }> = {},
 ) => ({
   id: `h${holeNumber}`,
@@ -43,6 +51,7 @@ const hole = (
   firstPuttDistance: null,
   teeOutcome: null,
   teeLie: null,
+  approaches: [],
   bunkerShots: 0,
   bunkersVisited: 0,
   penaltyStrokes: 0,
@@ -145,6 +154,49 @@ describe("toPlayableRound", () => {
       holes: [hole(1, true, { putts: 1, firstPuttDistance: "garbage" })],
     });
     expect(playable.holes[0]?.firstPuttDistance).toBeNull();
+  });
+
+  it("maps approach rows in sequence order and re-numbers them", () => {
+    const playable = toPlayableRound({
+      ...baseRound,
+      snapshot: null,
+      holes: [
+        hole(1, true, {
+          approaches: [
+            {
+              id: "a2",
+              roundHoleId: "h1",
+              sequence: 2,
+              distanceBand: "125-149",
+              result: "missed-zone",
+              missDirection: "left",
+            },
+            {
+              id: "a1",
+              roundHoleId: "h1",
+              sequence: 1,
+              distanceBand: "175-199",
+              result: "green",
+              missDirection: null,
+            },
+          ],
+        }),
+      ],
+    });
+    expect(playable.holes[0]?.approaches).toEqual([
+      {
+        sequence: 1,
+        distanceBand: "175-199",
+        result: "green",
+        missDirection: null,
+      },
+      {
+        sequence: 2,
+        distanceBand: "125-149",
+        result: "missed-zone",
+        missDirection: "left",
+      },
+    ]);
   });
 
   it("carries tee outcome and lie, and nulls unrecognised values", () => {

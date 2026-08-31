@@ -16,6 +16,7 @@ const hole = (overrides: Partial<PlayHole> = {}): PlayHole => ({
   firstPuttDistance: null,
   teeOutcome: null,
   teeLie: null,
+  approaches: [],
   penaltyStrokes: 0,
   ...overrides,
 });
@@ -111,6 +112,68 @@ describe("HoleForm", () => {
   it("nudges when a tee penalty has no penalty strokes on the hole", () => {
     renderForm(hole({ teeOutcome: "penalty", penaltyStrokes: 0 }));
     expect(screen.getByText(/no penalty strokes yet/i)).toBeInTheDocument();
+  });
+
+  it("reveals the approach section and seeds a first attempt", async () => {
+    const user = userEvent.setup();
+    const { onPatch } = renderForm(hole());
+    await user.click(screen.getByRole("button", { name: /\+ approach/i }));
+    expect(onPatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        approaches: [
+          expect.objectContaining({ sequence: 1, result: "green" }),
+        ],
+      }),
+    );
+  });
+
+  it("blocks completion when a missed approach has no direction", async () => {
+    const user = userEvent.setup();
+    const { onComplete } = renderForm(
+      hole({
+        score: 4,
+        shotsToZone: 2,
+        putts: 2,
+        firstPuttDistance: "5-15ft",
+        approaches: [
+          {
+            sequence: 1,
+            distanceBand: "150-174",
+            result: "missed-zone",
+            missDirection: null,
+          },
+        ],
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/miss direction/i);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("passes the approach list to onComplete", async () => {
+    const user = userEvent.setup();
+    const approaches = [
+      {
+        sequence: 1,
+        distanceBand: "150-174" as const,
+        result: "green" as const,
+        missDirection: null,
+      },
+    ];
+    const { onComplete } = renderForm(
+      hole({
+        score: 4,
+        shotsToZone: 2,
+        putts: 2,
+        firstPuttDistance: "5-15ft",
+        approaches,
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
+    expect(onComplete).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ approaches }),
+    );
   });
 
   it("passes tee outcome and lie to onComplete", async () => {

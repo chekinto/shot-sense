@@ -110,7 +110,10 @@ export const usePlayRound = (
         holeNumber,
       );
       setHoles((prev) => new Map(prev).set(holeNumber, hole));
-      await flush();
+      // The hole is saved locally — advance now, sync in the background. Finish
+      // stays blocked until the queue drains (see FinishRound), so nothing is
+      // lost by not awaiting the network here.
+      void flush();
       return { completedHoleCount };
     },
     [initial.id, flush],

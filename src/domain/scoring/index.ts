@@ -11,15 +11,18 @@
 export {
   METHODOLOGY_VERSION,
   SCORING_ZONE_YARDS,
+  APPROACH_BAND_MIN_SAMPLE,
   type MethodologyVersion,
   type ScoringZoneYards,
 } from "./models/methodology";
 export * from "./models/enums";
 export {
   type ApproachAttempt,
+  type RawApproachInput,
   isSuccessfulApproach,
   isFailedApproach,
   isIntentionalLayup,
+  toApproachAttempt,
 } from "./models/approach";
 export {
   type ScoringHoleIdentity,
@@ -69,6 +72,11 @@ export {
   calculateApproachSuccess,
   type ApproachSuccess,
 } from "./calculations/approachSuccess";
+export {
+  calculateApproachBands,
+  type ApproachBandBreakdown,
+  type ApproachBandRow,
+} from "./calculations/approachBands";
 export {
   calculateTeeContext,
   type TeeContext,

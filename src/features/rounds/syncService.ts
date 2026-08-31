@@ -1,15 +1,36 @@
 import "server-only";
 import { z } from "zod";
 import {
+  APPROACH_DISTANCE_BANDS,
+  APPROACH_RESULTS,
   FIRST_PUTT_DISTANCE_BANDS,
+  MISS_DIRECTIONS,
   TEE_LIES,
   TEE_OUTCOMES,
+  toApproachAttempt,
   validateCompletedHole,
+  type ApproachAttempt,
 } from "@/domain/scoring";
 import {
   roundRepository,
   RoundNotEditableError,
 } from "@/infrastructure/prisma/repositories/roundRepository";
+
+const approachSchema = z.object({
+  sequence: z.number().int().min(1),
+  distanceBand: z.enum(APPROACH_DISTANCE_BANDS),
+  result: z.enum(APPROACH_RESULTS),
+  missDirection: z.enum(MISS_DIRECTIONS).nullable(),
+});
+
+type IncomingApproach = z.infer<typeof approachSchema>;
+
+/** Shape the approach list for the domain validator (drops direction-less misses). */
+const toDomainAttempts = (approaches: IncomingApproach[]): ApproachAttempt[] =>
+  approaches.flatMap((approach, index) => {
+    const attempt = toApproachAttempt({ ...approach, sequence: index + 1 });
+    return attempt ? [attempt] : [];
+  });
 
 const holeStateSchema = z.object({
   holeNumber: z.number().int().min(1).max(18),
@@ -20,6 +41,7 @@ const holeStateSchema = z.object({
   firstPuttDistance: z.enum(FIRST_PUTT_DISTANCE_BANDS).nullable(),
   teeOutcome: z.enum(TEE_OUTCOMES).nullable(),
   teeLie: z.enum(TEE_LIES).nullable(),
+  approaches: z.array(approachSchema).max(10),
   penaltyStrokes: z.number().int().min(0),
   isComplete: z.boolean(),
 });
@@ -47,6 +69,13 @@ export const applySyncOperations = async (
 ): Promise<SyncResult> => {
   try {
     for (const op of input.operations) {
+      const approaches = op.approaches.map((a) => ({
+        sequence: a.sequence,
+        distanceBand: a.distanceBand,
+        result: a.result,
+        missDirection: a.missDirection,
+      }));
+
       if (op.isComplete) {
         const check = validateCompletedHole({
           holeNumber: op.holeNumber,
@@ -56,6 +85,7 @@ export const applySyncOperations = async (
           putts: op.putts ?? undefined,
           firstPuttDistance: op.firstPuttDistance ?? undefined,
           penaltyStrokes: op.penaltyStrokes,
+          approachAttempts: toDomainAttempts(approaches),
         });
         if (!check.ok) return { ok: false, reason: "invalid" };
       }
@@ -67,6 +97,7 @@ export const applySyncOperations = async (
         firstPuttDistance: op.firstPuttDistance,
         teeOutcome: op.teeOutcome,
         teeLie: op.teeLie,
+        approaches,
         penaltyStrokes: op.penaltyStrokes,
       });
       await roundRepository.setHoleComplete(

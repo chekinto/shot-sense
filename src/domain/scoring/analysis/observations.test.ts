@@ -96,6 +96,53 @@ describe("generateRoundObservations", () => {
     expect(tee?.text).toMatch(/1 of them drew a penalty stroke/i);
   });
 
+  it("flags approach misses and their dominant direction", () => {
+    const holes = eighteenPars().map((h, i) => {
+      if (i < 3)
+        return completedHole({
+          holeNumber: i + 1,
+          approachAttempts: [
+            {
+              sequence: 1,
+              distanceBand: "150-174",
+              result: "missed-zone",
+              missDirection: "right",
+            },
+          ],
+        });
+      return h;
+    });
+    const obs = generateRoundObservations(completedRound(holes)).find(
+      (o) => o.id === "approach-misses",
+    );
+    expect(obs?.text).toMatch(/3 approach shots missed the zone/i);
+    expect(obs?.text).toMatch(/holes 1, 2, 3/);
+    expect(obs?.text).toMatch(/every one missed right/i);
+  });
+
+  it("does not flag approach misses below 3", () => {
+    const holes = eighteenPars().map((h, i) =>
+      i < 2
+        ? completedHole({
+            holeNumber: i + 1,
+            approachAttempts: [
+              {
+                sequence: 1,
+                distanceBand: "150-174",
+                result: "missed-zone",
+                missDirection: "left",
+              },
+            ],
+          })
+        : h,
+    );
+    expect(
+      generateRoundObservations(completedRound(holes)).some(
+        (o) => o.id === "approach-misses",
+      ),
+    ).toBe(false);
+  });
+
   it("does not flag tee shots when only one was costly", () => {
     const holes = eighteenPars().map((h, i) =>
       i === 6

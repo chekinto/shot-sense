@@ -25,10 +25,21 @@ export interface ActiveRound {
 }
 
 import type {
+  ApproachDistanceBand,
+  ApproachResult,
   FirstPuttDistanceBand,
+  MissDirection,
   TeeLie,
   TeeOutcome,
 } from "@/domain/scoring";
+
+/** One approach attempt as the play screen holds it (miss direction optional). */
+export interface PlayApproach {
+  sequence: number;
+  distanceBand: ApproachDistanceBand;
+  result: ApproachResult;
+  missDirection: MissDirection | null;
+}
 
 /** One hole on the play screen: par/yardage snapshot + whatever's been recorded. */
 export interface PlayHole {
@@ -43,6 +54,7 @@ export interface PlayHole {
   firstPuttDistance: FirstPuttDistanceBand | null;
   teeOutcome: TeeOutcome | null;
   teeLie: TeeLie | null;
+  approaches: PlayApproach[];
   penaltyStrokes: number;
 }
 
@@ -54,6 +66,8 @@ export interface HolePatch {
   firstPuttDistance?: FirstPuttDistanceBand | null;
   teeOutcome?: TeeOutcome | null;
   teeLie?: TeeLie | null;
+  /** Full replacement of the hole's approach list. */
+  approaches?: PlayApproach[];
   penaltyStrokes?: number;
 }
 
@@ -65,6 +79,7 @@ export interface CompleteHoleValues {
   firstPuttDistance: FirstPuttDistanceBand | null;
   teeOutcome: TeeOutcome | null;
   teeLie: TeeLie | null;
+  approaches: PlayApproach[];
   penaltyStrokes: number;
 }
 

@@ -1,5 +1,6 @@
 import type { CompletedRound } from "../models/round";
 import type { CompletedScoringHole } from "../models/hole";
+import { MISS_DIRECTIONS, type MissDirection } from "../models/enums";
 import { isBackNine } from "../models/round";
 import { calculateScoreToPar } from "../calculations/scoreToPar";
 
@@ -113,6 +114,47 @@ const teeShotObservation = (
   };
 };
 
+const approachMissObservation = (
+  holes: readonly CompletedScoringHole[],
+): RoundObservation | null => {
+  const missed = holes.flatMap((h) =>
+    h.approachAttempts
+      .filter((a) => a.result === "missed-zone")
+      .map((a) => ({
+        holeNumber: h.holeNumber,
+        direction: (a as { missDirection: MissDirection }).missDirection,
+      })),
+  );
+  if (missed.length < 3) return null;
+
+  const missHoles = [...new Set(missed.map((m) => m.holeNumber))].sort(
+    (a, b) => a - b,
+  );
+  let text = `${missed.length} approach shots missed the zone this round (holes ${missHoles.join(", ")}).`;
+
+  // Deterministic: iterate directions in enum order, keep the highest count.
+  let topDirection: MissDirection = MISS_DIRECTIONS[0];
+  let topCount = 0;
+  for (const direction of MISS_DIRECTIONS) {
+    const count = missed.filter((m) => m.direction === direction).length;
+    if (count > topCount) {
+      topCount = count;
+      topDirection = direction;
+    }
+  }
+  if (topCount === missed.length) text += ` Every one missed ${topDirection}.`;
+  else if (topCount >= 2 && topCount * 2 > missed.length) {
+    text += ` Most often ${topDirection}.`;
+  }
+
+  return {
+    id: "approach-misses",
+    basis: "event-count",
+    text,
+    weight: 58 + missed.length * 4,
+  };
+};
+
 const nineSplitObservation = (
   round: CompletedRound,
 ): RoundObservation | null => {
@@ -163,6 +205,7 @@ export const generateRoundObservations = (
     threePuttObservation(played),
     bunkerObservation(played),
     teeShotObservation(played),
+    approachMissObservation(played),
     nineSplitObservation(round),
     tidyRoundObservation(played),
   ].filter((o): o is RoundObservation => o !== null);

@@ -1,7 +1,12 @@
 import { Card } from "@/components/ui";
 import type { SectionSummary } from "@/domain/scoring";
 import type { PostRoundView } from "./types";
-import { resultBreakdown, teeOutcomeBreakdown, toParLabel } from "./format";
+import {
+  missBreakdown,
+  resultBreakdown,
+  teeOutcomeBreakdown,
+  toParLabel,
+} from "./format";
 import styles from "./PostRound.module.css";
 
 const SectionRow = ({
@@ -29,7 +34,10 @@ const SectionRow = ({
 
 export const PostRound = ({ view }: { view: PostRoundView }) => {
   const { round, analysis, comparison, completedRoundCount } = view;
-  const { summary, benchmark, shotsToGetBack, tee, observations } = analysis;
+  const { summary, benchmark, shotsToGetBack, tee, approach, approachBands, observations } =
+    analysis;
+  const approachAttempts =
+    approach.successes + approach.failures + approach.layups;
 
   const longLagThreePutts = observations.some(
     (o) => o.id === "three-putts" && /long range/i.test(o.text),
@@ -167,6 +175,25 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
             Judged by consequence, not fairways hit. Where the stroke actually
             leaked comes with approach tracking.
           </p>
+        </Card>
+      ) : null}
+
+      {approachAttempts > 0 ? (
+        <Card>
+          <h2 className={styles.cardTitle}>Approach play</h2>
+          <p className={styles.teeBreakdown}>
+            {approach.successes}/{approach.ratedAttempts} found the green or zone
+            {approach.layups > 0
+              ? ` · ${approach.layups} lay-up${approach.layups === 1 ? "" : "s"}`
+              : ""}
+          </p>
+          {approachBands.totalMisses > 0 ? (
+            <p className={styles.teeCostly}>
+              Missed {approachBands.totalMisses} — {missBreakdown(approachBands.misses)}
+            </p>
+          ) : (
+            <p className={styles.clean}>No approaches missed the zone.</p>
+          )}
         </Card>
       ) : null}
 

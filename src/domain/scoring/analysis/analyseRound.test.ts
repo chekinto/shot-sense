@@ -20,6 +20,31 @@ describe("analyseRound", () => {
     expect(analysis.benchmark.leakHoles).toEqual([]);
   });
 
+  it("breaks approaches out by band (counts only)", () => {
+    const analysis = analyseRound(
+      completedRound([
+        completedHole({
+          holeNumber: 1,
+          approachAttempts: [approach({ distanceBand: "150-174", result: "green" })],
+        }),
+        completedHole({
+          holeNumber: 2,
+          approachAttempts: [
+            {
+              sequence: 1,
+              distanceBand: "150-174",
+              result: "missed-zone",
+              missDirection: "long",
+            },
+          ],
+        }),
+      ]),
+    );
+    const band = analysis.approachBands.rows.find((r) => r.band === "150-174");
+    expect(band).toMatchObject({ attempts: 2, successes: 1, failures: 1 });
+    expect(analysis.approachBands.misses.long).toBe(1);
+  });
+
   it("includes the tee-shot context", () => {
     const holes = eighteenPars().map((h, i) =>
       i === 0

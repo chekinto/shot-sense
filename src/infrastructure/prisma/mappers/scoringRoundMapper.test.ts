@@ -1,5 +1,24 @@
-import { Prisma, type Round, type RoundHole } from "@prisma/client";
+import {
+  Prisma,
+  type Round,
+  type RoundHole,
+  type RoundHoleApproach,
+} from "@prisma/client";
 import { toScoringRound } from "./scoringRoundMapper";
+
+type HoleWithApproaches = RoundHole & { approaches: RoundHoleApproach[] };
+
+const approach = (
+  overrides: Partial<RoundHoleApproach> = {},
+): RoundHoleApproach => ({
+  id: "a1",
+  roundHoleId: "h1",
+  sequence: 1,
+  distanceBand: "150-174",
+  result: "green",
+  missDirection: null,
+  ...overrides,
+});
 
 const round = (overrides: Partial<Round> = {}): Round => ({
   id: "round-1",
@@ -20,7 +39,7 @@ const round = (overrides: Partial<Round> = {}): Round => ({
   ...overrides,
 });
 
-const hole = (overrides: Partial<RoundHole>): RoundHole => ({
+const hole = (overrides: Partial<HoleWithApproaches>): HoleWithApproaches => ({
   id: `h${overrides.holeNumber}`,
   roundId: "round-1",
   holeNumber: 1,
@@ -32,6 +51,7 @@ const hole = (overrides: Partial<RoundHole>): RoundHole => ({
   firstPuttDistance: "5-15ft",
   teeOutcome: null,
   teeLie: null,
+  approaches: [],
   bunkerShots: 0,
   bunkersVisited: 0,
   penaltyStrokes: 0,
@@ -71,6 +91,36 @@ describe("toScoringRound", () => {
       holes: [hole({ holeNumber: 1 })],
     });
     expect(scoring.handicapAtStart).toBeUndefined();
+  });
+
+  it("maps approach rows and drops direction-less misses (Epic 8)", () => {
+    const scoring = toScoringRound({
+      ...round(),
+      holes: [
+        hole({
+          holeNumber: 1,
+          approaches: [
+            approach({ sequence: 1, distanceBand: "150-174", result: "green" }),
+            approach({
+              sequence: 2,
+              distanceBand: "125-149",
+              result: "missed-zone",
+              missDirection: "right",
+            }),
+            approach({ sequence: 3, result: "missed-zone", missDirection: null }),
+          ],
+        }),
+      ],
+    });
+    expect(scoring.holes[0]?.approachAttempts).toEqual([
+      { sequence: 1, distanceBand: "150-174", result: "green" },
+      {
+        sequence: 2,
+        distanceBand: "125-149",
+        result: "missed-zone",
+        missDirection: "right",
+      },
+    ]);
   });
 
   it("carries tee outcome and lie through to the scoring hole (Epic 7)", () => {
