@@ -2,8 +2,10 @@ import {
   MISS_DIRECTIONS,
   MISTAKE_CATEGORIES,
   type ApproachBandBreakdown,
+  type CategoryPriority,
   type FaultSummary,
   type HoleResult,
+  type ScoringCategory,
   type SectionSummary,
   type TeeContext,
 } from "@/domain/scoring";
@@ -76,3 +78,23 @@ export const mistakeBreakdown = (
     .sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))
     .map((category) => `${counts[category]} ${MISTAKE_WORDS[category] ?? category}`)
     .join(" · ");
+
+const CATEGORY_LABELS: Record<ScoringCategory, string> = {
+  tee: "tee game",
+  approach: "approach play",
+  "short-game": "short game",
+  putting: "putting",
+  strategy: "course strategy",
+  recovery: "recovery play",
+  other: "other",
+};
+
+export const categoryLabel = (category: ScoringCategory): string =>
+  CATEGORY_LABELS[category];
+
+/** "your short game leaked the most — about 4 shots across 5 holes" */
+export const biggestLeakLine = (top: CategoryPriority): string => {
+  const shots = `${top.severity} shot${top.severity === 1 ? "" : "s"}`;
+  const holes = `${top.frequency} hole${top.frequency === 1 ? "" : "s"}`;
+  return `your ${categoryLabel(top.category)} leaked the most — about ${shots} across ${holes}`;
+};

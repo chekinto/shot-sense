@@ -96,6 +96,14 @@ export {
   type HoleValidationResult,
 } from "./validation/completedHole";
 
+// ---- Recommendations ----
+export {
+  calculateCategoryPriority,
+  type ScoringCategory,
+  type CategoryPriority,
+  type CategoryPriorityAnalysis,
+} from "./recommendations/categoryPriority";
+
 // ---- Analysis ----
 export { analyseRound, type RoundAnalysis } from "./analysis/analyseRound";
 export {

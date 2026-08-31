@@ -2,6 +2,7 @@ import { Card } from "@/components/ui";
 import type { SectionSummary } from "@/domain/scoring";
 import type { PostRoundView } from "./types";
 import {
+  biggestLeakLine,
   missBreakdown,
   mistakeBreakdown,
   resultBreakdown,
@@ -43,6 +44,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
     approach,
     approachBands,
     faults,
+    priority,
     observations,
   } = analysis;
   const approachAttempts =
@@ -234,14 +236,21 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
         </Card>
       ) : null}
 
-      {observations.length > 0 ? (
+      {priority.top || observations.length > 0 ? (
         <Card>
           <h2 className={styles.cardTitle}>This round</h2>
-          <ul className={styles.observations}>
-            {observations.map((o) => (
-              <li key={o.id}>{o.text}</li>
-            ))}
-          </ul>
+          {priority.top ? (
+            <p className={styles.biggestLeak}>
+              This round, {biggestLeakLine(priority.top)}.
+            </p>
+          ) : null}
+          {observations.length > 0 ? (
+            <ul className={styles.observations}>
+              {observations.map((o) => (
+                <li key={o.id}>{o.text}</li>
+              ))}
+            </ul>
+          ) : null}
         </Card>
       ) : null}
 

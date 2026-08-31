@@ -54,6 +54,12 @@ describe("PostRound", () => {
     expect(stgb).toHaveTextContent(/putting/);
   });
 
+  it("names the round's biggest leak in the This round card", () => {
+    render(<PostRound view={view()} />);
+    // hole 4 penalty double + hole 10 three-putt → putting or penalty leads.
+    expect(screen.getByText(/this round, your .+ leaked the most/i)).toBeInTheDocument();
+  });
+
   it("shows the previous-round comparison when present", () => {
     render(
       <PostRound
