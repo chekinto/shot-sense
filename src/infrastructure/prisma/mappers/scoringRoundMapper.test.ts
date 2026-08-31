@@ -54,6 +54,7 @@ const hole = (overrides: Partial<HoleWithApproaches>): HoleWithApproaches => ({
   approaches: [],
   bunkerShots: 0,
   bunkersVisited: 0,
+  mistakes: [],
   penaltyStrokes: 0,
   isComplete: true,
   createdAt: new Date(),
@@ -91,6 +92,28 @@ describe("toScoringRound", () => {
       holes: [hole({ holeNumber: 1 })],
     });
     expect(scoring.handicapAtStart).toBeUndefined();
+  });
+
+  it("carries bunker counts and valid mistake tags (Epic 9)", () => {
+    const scoring = toScoringRound({
+      ...round(),
+      holes: [
+        hole({
+          holeNumber: 1,
+          score: 6,
+          shotsToZone: 2,
+          putts: 2,
+          bunkerShots: 3,
+          bunkersVisited: 1,
+          mistakes: ["short-game", "short-game", "bogus"],
+        }),
+      ],
+    });
+    expect(scoring.holes[0]).toMatchObject({
+      bunkerShots: 3,
+      bunkersVisited: 1,
+      mistakes: ["short-game", "short-game"],
+    });
   });
 
   it("maps approach rows and drops direction-less misses (Epic 8)", () => {

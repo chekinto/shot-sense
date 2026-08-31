@@ -77,6 +77,7 @@ export {
   type ApproachBandBreakdown,
   type ApproachBandRow,
 } from "./calculations/approachBands";
+export { calculateFaults, type FaultSummary } from "./calculations/faults";
 export {
   calculateTeeContext,
   type TeeContext,

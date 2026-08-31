@@ -3,6 +3,7 @@ import type { SectionSummary } from "@/domain/scoring";
 import type { PostRoundView } from "./types";
 import {
   missBreakdown,
+  mistakeBreakdown,
   resultBreakdown,
   teeOutcomeBreakdown,
   toParLabel,
@@ -34,10 +35,20 @@ const SectionRow = ({
 
 export const PostRound = ({ view }: { view: PostRoundView }) => {
   const { round, analysis, comparison, completedRoundCount } = view;
-  const { summary, benchmark, shotsToGetBack, tee, approach, approachBands, observations } =
-    analysis;
+  const {
+    summary,
+    benchmark,
+    shotsToGetBack,
+    tee,
+    approach,
+    approachBands,
+    faults,
+    observations,
+  } = analysis;
   const approachAttempts =
     approach.successes + approach.failures + approach.layups;
+  const showFaults =
+    faults.totalMistakes > 0 || faults.bunkerHoles.length > 0;
 
   const longLagThreePutts = observations.some(
     (o) => o.id === "three-putts" && /long range/i.test(o.text),
@@ -193,6 +204,32 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
             </p>
           ) : (
             <p className={styles.clean}>No approaches missed the zone.</p>
+          )}
+        </Card>
+      ) : null}
+
+      {showFaults ? (
+        <Card>
+          <h2 className={styles.cardTitle}>Mistakes &amp; bunkers</h2>
+          {faults.totalMistakes > 0 ? (
+            <p className={styles.teeBreakdown}>
+              {mistakeBreakdown(faults.mistakeCounts)}
+            </p>
+          ) : (
+            <p className={styles.clean}>No mistakes flagged this round.</p>
+          )}
+          {faults.bunkerHoles.length > 0 ? (
+            <p className={styles.teeCostly}>
+              In a bunker on {faults.bunkerHoles.length} hole
+              {faults.bunkerHoles.length === 1 ? "" : "s"} (
+              {faults.bunkerHoles.join(", ")})
+              {faults.bunkerStuckHoles.length > 0
+                ? ` — needed 2+ to escape on ${faults.bunkerStuckHoles.join(", ")}`
+                : ""}
+              .
+            </p>
+          ) : (
+            <p className={styles.clean}>No bunkers.</p>
           )}
         </Card>
       ) : null}

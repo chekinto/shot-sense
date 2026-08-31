@@ -23,6 +23,12 @@
   font-weight: var(--weight-semibold);
 }
 
+.bunker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .addEvent {
   align-self: flex-start;
   min-height: var(--tap-target-min);

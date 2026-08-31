@@ -7,6 +7,7 @@ import {
   calculateApproachBands,
   type ApproachBandBreakdown,
 } from "../calculations/approachBands";
+import { calculateFaults, type FaultSummary } from "../calculations/faults";
 import {
   calculateBenchmarkScorecard,
   type BenchmarkScorecard,
@@ -48,6 +49,8 @@ export interface RoundAnalysis {
   approachBands: ApproachBandBreakdown;
   /** Tee-shot picture, judged by consequence (§29–31). Event counts only. */
   tee: TeeContext;
+  /** Mistake tags and bunker trouble, as plain counts (§38 / §40). */
+  faults: FaultSummary;
   /** "This round" tier — event-count facts only (correction #8). */
   observations: RoundObservation[];
 }
@@ -66,6 +69,7 @@ export const analyseRound = (round: CompletedRound): RoundAnalysis => {
     approach: calculateApproachSuccess(approachAttempts),
     approachBands: calculateApproachBands(approachAttempts),
     tee: calculateTeeContext(round),
+    faults: calculateFaults(round),
     observations: generateRoundObservations(round),
   };
 };

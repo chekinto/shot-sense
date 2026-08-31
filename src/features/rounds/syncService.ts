@@ -5,6 +5,7 @@ import {
   APPROACH_RESULTS,
   FIRST_PUTT_DISTANCE_BANDS,
   MISS_DIRECTIONS,
+  MISTAKE_CATEGORIES,
   TEE_LIES,
   TEE_OUTCOMES,
   toApproachAttempt,
@@ -42,6 +43,9 @@ const holeStateSchema = z.object({
   teeOutcome: z.enum(TEE_OUTCOMES).nullable(),
   teeLie: z.enum(TEE_LIES).nullable(),
   approaches: z.array(approachSchema).max(10),
+  bunkerShots: z.number().int().min(0),
+  bunkersVisited: z.number().int().min(0),
+  mistakes: z.array(z.enum(MISTAKE_CATEGORIES)).max(20),
   penaltyStrokes: z.number().int().min(0),
   isComplete: z.boolean(),
 });
@@ -85,6 +89,8 @@ export const applySyncOperations = async (
           putts: op.putts ?? undefined,
           firstPuttDistance: op.firstPuttDistance ?? undefined,
           penaltyStrokes: op.penaltyStrokes,
+          bunkerShots: op.bunkerShots,
+          bunkersVisited: op.bunkersVisited,
           approachAttempts: toDomainAttempts(approaches),
         });
         if (!check.ok) return { ok: false, reason: "invalid" };
@@ -98,6 +104,9 @@ export const applySyncOperations = async (
         teeOutcome: op.teeOutcome,
         teeLie: op.teeLie,
         approaches,
+        bunkerShots: op.bunkerShots,
+        bunkersVisited: op.bunkersVisited,
+        mistakes: op.mistakes,
         penaltyStrokes: op.penaltyStrokes,
       });
       await roundRepository.setHoleComplete(

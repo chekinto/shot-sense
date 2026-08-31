@@ -275,6 +275,34 @@ exports[`scoring engine — golden output produces the canonical analysis for th
     "totalFromZoneLeak": 3,
     "totalToZoneLeak": 4,
   },
+  "faults": {
+    "bunkerHoles": [
+      6,
+      14,
+    ],
+    "bunkerStuckHoles": [
+      14,
+    ],
+    "mistakeCounts": {
+      "approach": 0,
+      "other": 0,
+      "putting": 3,
+      "recovery": 0,
+      "short-game": 2,
+      "strategy": 1,
+      "tee": 2,
+    },
+    "mistakeHoles": [
+      4,
+      6,
+      7,
+      10,
+      12,
+      14,
+      17,
+    ],
+    "totalMistakes": 8,
+  },
   "methodologyVersion": "1.0.0",
   "observations": [
     {

@@ -29,6 +29,7 @@ import type {
   ApproachResult,
   FirstPuttDistanceBand,
   MissDirection,
+  MistakeCategory,
   TeeLie,
   TeeOutcome,
 } from "@/domain/scoring";
@@ -55,6 +56,9 @@ export interface PlayHole {
   teeOutcome: TeeOutcome | null;
   teeLie: TeeLie | null;
   approaches: PlayApproach[];
+  bunkerShots: number;
+  bunkersVisited: number;
+  mistakes: MistakeCategory[];
   penaltyStrokes: number;
 }
 
@@ -68,6 +72,10 @@ export interface HolePatch {
   teeLie?: TeeLie | null;
   /** Full replacement of the hole's approach list. */
   approaches?: PlayApproach[];
+  bunkerShots?: number;
+  bunkersVisited?: number;
+  /** Full replacement of the hole's mistake tags. */
+  mistakes?: MistakeCategory[];
   penaltyStrokes?: number;
 }
 
@@ -80,6 +88,9 @@ export interface CompleteHoleValues {
   teeOutcome: TeeOutcome | null;
   teeLie: TeeLie | null;
   approaches: PlayApproach[];
+  bunkerShots: number;
+  bunkersVisited: number;
+  mistakes: MistakeCategory[];
   penaltyStrokes: number;
 }
 
