@@ -2,7 +2,9 @@ import { Card } from "@/components/ui";
 import type { SectionSummary } from "@/domain/scoring";
 import type { PostRoundView } from "./types";
 import {
+  baselineCount,
   biggestLeakLine,
+  categoryLabel,
   missBreakdown,
   mistakeBreakdown,
   resultBreakdown,
@@ -35,7 +37,7 @@ const SectionRow = ({
 );
 
 export const PostRound = ({ view }: { view: PostRoundView }) => {
-  const { round, analysis, comparison, completedRoundCount } = view;
+  const { round, analysis, baseline, completedRoundCount } = view;
   const {
     summary,
     benchmark,
@@ -102,10 +104,13 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
               </span>
             </span>
             <span className={styles.statLabel}>entered in regulation</span>
-            {comparison ? (
+            {baseline ? (
               <span className={styles.compare}>
-                last round {comparison.enteredInRegulation.count}/
-                {comparison.enteredInRegulation.of}
+                recent form{" "}
+                {baselineCount(
+                  baseline.enteredInRegulationRate,
+                  benchmark.enteredInRegulation.of,
+                )}
               </span>
             ) : null}
           </div>
@@ -115,14 +120,25 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
               <span className={styles.ofStat}>/{benchmark.downInThree.of}</span>
             </span>
             <span className={styles.statLabel}>got down in three</span>
-            {comparison ? (
+            {baseline ? (
               <span className={styles.compare}>
-                last round {comparison.downInThree.count}/
-                {comparison.downInThree.of}
+                recent form{" "}
+                {baselineCount(
+                  baseline.downInThreeRate,
+                  benchmark.downInThree.of,
+                )}
               </span>
             ) : null}
           </div>
         </div>
+
+        {baseline ? (
+          <p className={styles.benchmarkNote}>
+            {baseline.confidence === "early"
+              ? `Early read — only ${baseline.roundsUsed} rounds so far, across different courses.`
+              : `Your last ${baseline.roundsUsed} rounds, across different courses.`}
+          </p>
+        ) : null}
 
         {benchmark.leakHoles.length > 0 ? (
           <div className={styles.leaks}>
@@ -256,11 +272,23 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
 
       <Card>
         <h2 className={styles.cardTitle}>Your game</h2>
-        <p className={styles.locked}>
-          {yourGameRoundsNeeded > 0
-            ? `Recurring patterns and your Primary / Secondary focus unlock after about 5 rounds — ${yourGameRoundsNeeded} to go.`
-            : "Trend analysis is coming in a future update."}
-        </p>
+        {yourGameRoundsNeeded > 0 ? (
+          <p className={styles.locked}>
+            Recurring patterns and your Primary / Secondary focus unlock after
+            about 5 rounds — {yourGameRoundsNeeded} to go.
+          </p>
+        ) : baseline?.commonLeak ? (
+          <p className={styles.locked}>
+            Across your recent rounds, {categoryLabel(baseline.commonLeak)} has
+            come up most often. Primary / Secondary focus lands in a future
+            update.
+          </p>
+        ) : (
+          <p className={styles.locked}>
+            No single area stands out across your recent rounds. Primary /
+            Secondary focus lands in a future update.
+          </p>
+        )}
       </Card>
     </div>
   );

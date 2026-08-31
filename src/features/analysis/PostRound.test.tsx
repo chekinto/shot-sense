@@ -24,9 +24,10 @@ const view = (overrides: Partial<PostRoundView> = {}): PostRoundView => {
       holesPlayed: 18,
       handicapAtStart: 14,
       status: "completed",
+      dataCompleteness: "full",
     },
     analysis: analyseRound(completedRound(holes)),
-    comparison: null,
+    baseline: null,
     completedRoundCount: 1,
     ...overrides,
   };
@@ -60,18 +61,24 @@ describe("PostRound", () => {
     expect(screen.getByText(/this round, your .+ leaked the most/i)).toBeInTheDocument();
   });
 
-  it("shows the previous-round comparison when present", () => {
+  it("shows the recent-form baseline and its caveat when present", () => {
     render(
       <PostRound
         view={view({
-          comparison: {
-            enteredInRegulation: { count: 9, of: 18 },
-            downInThree: { count: 11, of: 18 },
+          baseline: {
+            roundsUsed: 4,
+            confidence: "early",
+            enteredInRegulationRate: 0.5,
+            downInThreeRate: 0.5,
+            scoreToParPerHole: 0.5,
+            shotsToGetBackPerHole: 0.3,
+            commonLeak: null,
           },
         })}
       />,
     );
-    expect(screen.getByText(/last round 9\/18/)).toBeInTheDocument();
+    expect(screen.getAllByText(/recent form ~9\/18/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/early read — only 4 rounds/i)).toBeInTheDocument();
   });
 
   it("locks the Your game tier with a rounds-to-go count", () => {
@@ -93,6 +100,7 @@ describe("PostRound", () => {
             holesPlayed: 9,
             handicapAtStart: null,
             status: "completed",
+            dataCompleteness: "full",
           },
           analysis: analyseRound(completedRound(nine, { plannedHoleCount: 9 })),
         })}

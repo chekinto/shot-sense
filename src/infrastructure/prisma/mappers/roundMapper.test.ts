@@ -12,6 +12,7 @@ const baseRound = {
   handicapAtStart: new Prisma.Decimal("14.2"),
   scoringZoneYards: 100,
   status: "IN_PROGRESS" as const,
+  dataCompleteness: "FULL" as const,
   methodologyVersion: "1.0.0",
   version: 1,
   createdAt: new Date(),

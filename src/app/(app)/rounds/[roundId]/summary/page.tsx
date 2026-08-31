@@ -17,9 +17,16 @@ const SummaryPage = async ({
   return (
     <div className={styles.wrap}>
       <ForgetLocalRound roundId={roundId} />
-      <Link href="/dashboard" className={styles.back}>
-        ← Dashboard
-      </Link>
+      <div className={styles.topRow}>
+        <Link href="/rounds" className={styles.back}>
+          ← Your rounds
+        </Link>
+        {view.round.dataCompleteness === "coarse" ? (
+          <Link href={`/rounds/${roundId}/edit`} className={styles.back}>
+            Edit
+          </Link>
+        ) : null}
+      </div>
       <PostRound view={view} />
     </div>
   );

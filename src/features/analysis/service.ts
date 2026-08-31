@@ -1,11 +1,19 @@
 import "server-only";
 import { notFound } from "next/navigation";
-import { analyseRound, calculateBenchmarkScorecard } from "@/domain/scoring";
+import {
+  analyseRound,
+  calculatePersonalBaseline,
+  BASELINE_WINDOW,
+} from "@/domain/scoring";
 import { requireUser } from "@/features/auth/session";
 import { roundRepository } from "@/infrastructure/prisma/repositories/roundRepository";
 import { toDomainRoundStatus } from "@/infrastructure/prisma/mappers/roundMapper";
 import { toScoringRound } from "@/infrastructure/prisma/mappers/scoringRoundMapper";
 import type { PostRoundView } from "./types";
+
+/** Same methodology major version — trends only compare like with like (#6). */
+const sameMajor = (a: string, b: string): boolean =>
+  a.split(".")[0] === b.split(".")[0];
 
 export const getPostRoundAnalysis = async (
   roundId: string,
@@ -18,19 +26,15 @@ export const getPostRoundAnalysis = async (
   const scoringRound = toScoringRound(row);
   const analysis = analyseRound(scoringRound);
 
-  const previous = await roundRepository.findPreviousCompletedRow(
+  const priorRows = await roundRepository.recentCompletedRows(
     user.id,
     row.completedAt,
+    BASELINE_WINDOW,
   );
-  const comparison = previous
-    ? (() => {
-        const card = calculateBenchmarkScorecard(toScoringRound(previous));
-        return {
-          enteredInRegulation: card.enteredInRegulation,
-          downInThree: card.downInThree,
-        };
-      })()
-    : null;
+  const history = priorRows
+    .map(toScoringRound)
+    .filter((r) => sameMajor(r.methodologyVersion, scoringRound.methodologyVersion));
+  const baseline = calculatePersonalBaseline(history);
 
   const completedRoundCount = await roundRepository.countCompleted(user.id);
 
@@ -44,9 +48,10 @@ export const getPostRoundAnalysis = async (
       holesPlayed: scoringRound.holes.length,
       handicapAtStart: row.handicapAtStart?.toNumber() ?? null,
       status: toDomainRoundStatus(row.status),
+      dataCompleteness: scoringRound.dataCompleteness ?? "full",
     },
     analysis,
-    comparison,
+    baseline,
     completedRoundCount,
   };
 };

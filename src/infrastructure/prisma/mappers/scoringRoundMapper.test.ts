@@ -31,6 +31,7 @@ const round = (overrides: Partial<Round> = {}): Round => ({
   handicapAtStart: new Prisma.Decimal("12.4"),
   scoringZoneYards: 100,
   status: "COMPLETED",
+  dataCompleteness: "FULL",
   methodologyVersion: "1.0.0",
   version: 1,
   createdAt: new Date(),
@@ -83,7 +84,16 @@ describe("toScoringRound", () => {
       handicapAtStart: 12.4,
       methodologyVersion: "1.0.0",
       scoringZoneYards: 100,
+      dataCompleteness: "full",
     });
+  });
+
+  it("maps a COARSE round to the domain 'coarse' completeness", () => {
+    const scoring = toScoringRound({
+      ...round({ dataCompleteness: "COARSE" }),
+      holes: [hole({ holeNumber: 1 })],
+    });
+    expect(scoring.dataCompleteness).toBe("coarse");
   });
 
   it("omits handicap when the round has none", () => {

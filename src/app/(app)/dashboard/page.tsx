@@ -50,6 +50,17 @@ const DashboardPage = async () => {
           </Link>
         </section>
       )}
+
+      <section className={styles.card}>
+        <h2>Your rounds</h2>
+        <p>
+          Review past rounds, or add older ones so your baseline has something to
+          compare against.
+        </p>
+        <Link href="/rounds" className={styles.cta}>
+          View rounds
+        </Link>
+      </section>
     </div>
   );
 };

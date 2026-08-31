@@ -4,6 +4,12 @@
   gap: var(--space-4);
 }
 
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .back {
   font-size: var(--text-sm);
   color: var(--color-text-muted);
