@@ -9,6 +9,10 @@ import {
 } from "../calculations/approachBands";
 import { calculateFaults, type FaultSummary } from "../calculations/faults";
 import {
+  calculateCategoryPriority,
+  type CategoryPriorityAnalysis,
+} from "../recommendations/categoryPriority";
+import {
   calculateBenchmarkScorecard,
   type BenchmarkScorecard,
 } from "../calculations/benchmark";
@@ -51,6 +55,8 @@ export interface RoundAnalysis {
   tee: TeeContext;
   /** Mistake tags and bunker trouble, as plain counts (§38 / §40). */
   faults: FaultSummary;
+  /** Lost shots attributed to skill categories, worst first (§47–57). */
+  priority: CategoryPriorityAnalysis;
   /** "This round" tier — event-count facts only (correction #8). */
   observations: RoundObservation[];
 }
@@ -70,6 +76,7 @@ export const analyseRound = (round: CompletedRound): RoundAnalysis => {
     approachBands: calculateApproachBands(approachAttempts),
     tee: calculateTeeContext(round),
     faults: calculateFaults(round),
+    priority: calculateCategoryPriority(round),
     observations: generateRoundObservations(round),
   };
 };

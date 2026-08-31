@@ -67,26 +67,31 @@ test.describe("record a round", () => {
     await expect(page.getByText(/where shots leaked/i)).toBeVisible();
 
     // Shots to Get Back = 1 penalty (h3) + 1 putting (h5) + 2 bunker (h5, stuck).
-    const stgb = page.getByText("Shots to get back").locator("..");
+    const stgb = page.getByRole("heading", { name: "Shots to get back" }).locator("..");
     await expect(stgb).toContainText("1 penalty · 1 putting · 2 bunker");
 
     // "Mistakes & bunkers" card.
-    const faults = page.getByText("Mistakes & bunkers").locator("..");
+    const faults = page.getByRole("heading", { name: "Mistakes & bunkers" }).locator("..");
     await expect(faults).toContainText("1 short game · 1 strategy");
     await expect(faults).toContainText("In a bunker on 1 hole (5)");
     await expect(faults).toContainText("needed 2+ to escape on 5");
 
     // "Off the tee" — one recovery recorded on hole 7.
-    const tee = page.getByText("Off the tee").locator("..");
+    const tee = page.getByRole("heading", { name: "Off the tee" }).locator("..");
     await expect(tee).toContainText("needed a recovery");
     await expect(tee).toContainText("hole 7");
 
     // "Approach play" — 6 greens, 1 missed right (holes 3 and 5 logged no approach).
-    const approach = page.getByText("Approach play").locator("..");
+    const approach = page
+      .getByRole("heading", { name: "Approach play" })
+      .locator("..");
     await expect(approach).toContainText("6/7 found the green or zone");
     await expect(approach).toContainText("1 right");
 
-    // "This round" event-count observations.
+    // "This round" — the category-priority lead line + event-count observations.
+    await expect(
+      page.getByText(/this round, your .+ leaked the most — about/i),
+    ).toBeVisible();
     await expect(page.getByText(/1 penalty stroke on hole 3/i)).toBeVisible();
     await expect(page.getByText(/3 or more putts \(5\)/i)).toBeVisible();
 

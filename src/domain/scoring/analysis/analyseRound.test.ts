@@ -20,6 +20,23 @@ describe("analyseRound", () => {
     expect(analysis.benchmark.leakHoles).toEqual([]);
   });
 
+  it("ranks the round's category priority", () => {
+    const analysis = analyseRound(
+      completedRound([
+        completedHole({
+          holeNumber: 1,
+          score: 7,
+          shotsToZone: 2,
+          putts: 4,
+          firstPuttDistance: "5-15ft",
+        }),
+        completedHole({ holeNumber: 2 }),
+      ]),
+    );
+    expect(analysis.priority.top?.category).toBe("putting");
+    expect(analysis.priority.top?.severity).toBe(2);
+  });
+
   it("surfaces mistake tags and bunker trouble", () => {
     const analysis = analyseRound(
       completedRound([
