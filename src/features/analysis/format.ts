@@ -1,4 +1,10 @@
-import type { HoleResult, SectionSummary, TeeContext } from "@/domain/scoring";
+import {
+  MISS_DIRECTIONS,
+  type ApproachBandBreakdown,
+  type HoleResult,
+  type SectionSummary,
+  type TeeContext,
+} from "@/domain/scoring";
 
 export const toParLabel = (toPar: number): string =>
   toPar === 0 ? "E" : toPar > 0 ? `+${toPar}` : `${toPar}`;
@@ -42,4 +48,10 @@ const TEE_OUTCOME_ORDER: [keyof TeeContext["outcomes"], string][] = [
 export const teeOutcomeBreakdown = (tee: TeeContext): string =>
   TEE_OUTCOME_ORDER.filter(([key]) => tee.outcomes[key] > 0)
     .map(([key, label]) => `${tee.outcomes[key]} ${label}`)
+    .join(" · ");
+
+/** "2 right · 1 short" — miss directions, non-zero only, in a fixed order. */
+export const missBreakdown = (misses: ApproachBandBreakdown["misses"]): string =>
+  MISS_DIRECTIONS.filter((direction) => misses[direction] > 0)
+    .map((direction) => `${misses[direction]} ${direction}`)
     .join(" · ");

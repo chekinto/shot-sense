@@ -14,6 +14,7 @@ const opToBody = (op: HoleSyncOp) => ({
   firstPuttDistance: op.firstPuttDistance,
   teeOutcome: op.teeOutcome,
   teeLie: op.teeLie,
+  approaches: op.approaches,
   penaltyStrokes: op.penaltyStrokes,
   isComplete: op.isComplete,
 });

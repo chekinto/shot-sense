@@ -70,6 +70,8 @@ export const recordHole = async (
     penalty?: number;
     teeOutcome?: string;
     teeLie?: string;
+    /** Records one approach attempt on this hole. */
+    approach?: { result: string; miss?: string };
   },
 ): Promise<void> => {
   await bump(page, /increase score/i, values.score);
@@ -91,6 +93,20 @@ export const recordHole = async (
     .getByRole("radiogroup", { name: /tee shot ended up/i })
     .getByRole("radio", { name: values.teeLie ?? "Fairway" })
     .click();
+
+  if (values.approach) {
+    await page.getByRole("button", { name: /\+ approach/i }).click();
+    const resultGroup = page.getByRole("radiogroup", {
+      name: /approach 1 result/i,
+    });
+    await resultGroup.getByRole("radio", { name: values.approach.result }).click();
+    if (values.approach.miss) {
+      await page
+        .getByRole("radiogroup", { name: /approach 1 miss direction/i })
+        .getByRole("radio", { name: values.approach.miss })
+        .click();
+    }
+  }
 
   if (values.penalty) {
     // Default tee outcome is "Clear", so the penalty stepper starts hidden.

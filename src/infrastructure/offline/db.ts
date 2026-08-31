@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
-import type { PlayHole } from "@/features/rounds/types";
+import type { PlayApproach, PlayHole } from "@/features/rounds/types";
 
 /** A round mirrored to this device so it survives going offline (§21, §22). */
 export interface StoredActiveRound {
@@ -32,6 +32,7 @@ export interface HoleSyncOp {
   firstPuttDistance: PlayHole["firstPuttDistance"];
   teeOutcome: PlayHole["teeOutcome"];
   teeLie: PlayHole["teeLie"];
+  approaches: PlayApproach[];
   penaltyStrokes: number;
   isComplete: boolean;
   updatedAt: number;

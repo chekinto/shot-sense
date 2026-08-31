@@ -1,6 +1,10 @@
 import "server-only";
 import { prisma } from "../client";
-import { toActiveRound, toPlayableRound } from "../mappers/roundMapper";
+import {
+  toActiveRound,
+  toPlayHole,
+  toPlayableRound,
+} from "../mappers/roundMapper";
 import {
   METHODOLOGY_VERSION,
   SCORING_ZONE_YARDS,
@@ -9,6 +13,7 @@ import {
 import type {
   ActiveRound,
   HolePatch,
+  PlayApproach,
   PlayHole,
   PlayableRound,
 } from "@/features/rounds/types";
@@ -42,7 +47,11 @@ export interface StartRoundData {
 
 const withSnapshotAndHoles = {
   snapshot: true,
-  holes: true,
+  holes: { include: { approaches: true } },
+} as const;
+
+const withHolesAndApproaches = {
+  holes: { include: { approaches: true } },
 } as const;
 
 export const roundRepository = {
@@ -125,7 +134,7 @@ export const roundRepository = {
           : {}),
       },
       orderBy: { completedAt: "desc" },
-      include: { holes: true },
+      include: withHolesAndApproaches,
     });
   },
 
@@ -156,10 +165,27 @@ export const roundRepository = {
       throw new StaleHoleError();
     }
 
+    // `approaches` live in their own table — never a column on round_holes.
+    const { approaches, ...scalarPatch } = patch;
+
     let row = await prisma.roundHole.update({
       where: { roundId_holeNumber: { roundId, holeNumber } },
-      data: { ...patch, version: { increment: 1 } },
+      data: { ...scalarPatch, version: { increment: 1 } },
+      include: { approaches: true },
     });
+
+    // Only touch the approaches table when there's something to change — the
+    // common hole has none and the sync payload still carries an empty list.
+    if (
+      approaches !== undefined &&
+      (approaches.length > 0 || row.approaches.length > 0)
+    ) {
+      await replaceApproaches(row.id, approaches);
+      row = await prisma.roundHole.findUniqueOrThrow({
+        where: { id: row.id },
+        include: { approaches: true },
+      });
+    }
 
     // A previously-completed hole that an edit has made invalid drops back to
     // incomplete (never auto-completed — that stays an explicit Save, §24).
@@ -178,26 +204,13 @@ export const roundRepository = {
         row = await prisma.roundHole.update({
           where: { roundId_holeNumber: { roundId, holeNumber } },
           data: { isComplete: false },
+          include: { approaches: true },
         });
         await recomputeCompletedCount(roundId);
       }
     }
 
-    return {
-      holeNumber: row.holeNumber,
-      par: row.par,
-      yardage: row.yardage,
-      isComplete: row.isComplete,
-      version: row.version,
-      score: row.score,
-      shotsToZone: row.shotsToZone,
-      putts: row.putts,
-      firstPuttDistance:
-        (row.firstPuttDistance as PlayHole["firstPuttDistance"]) ?? null,
-      teeOutcome: (row.teeOutcome as PlayHole["teeOutcome"]) ?? null,
-      teeLie: (row.teeLie as PlayHole["teeLie"]) ?? null,
-      penaltyStrokes: row.penaltyStrokes,
-    };
+    return toPlayHole(row);
   },
 
   /** Marks a hole complete/incomplete and re-derives the round's completed count. */
@@ -245,6 +258,29 @@ const assertEditable = async (
   if (!round || (round.status !== "IN_PROGRESS" && round.status !== "PAUSED")) {
     throw new RoundNotEditableError();
   }
+};
+
+/**
+ * Replace a hole's approach attempts wholesale. Full-state, to match the offline
+ * sync model — the client always sends the hole's complete approach list.
+ * Unrecognised bands/results are dropped; missing miss directions become null.
+ */
+const replaceApproaches = async (
+  roundHoleId: string,
+  approaches: PlayApproach[],
+): Promise<void> => {
+  await prisma.roundHoleApproach.deleteMany({ where: { roundHoleId } });
+  if (approaches.length === 0) return;
+  await prisma.roundHoleApproach.createMany({
+    data: approaches.map((approach, index) => ({
+      roundHoleId,
+      sequence: index + 1,
+      distanceBand: approach.distanceBand,
+      result: approach.result,
+      missDirection:
+        approach.result === "missed-zone" ? approach.missDirection : null,
+    })),
+  });
 };
 
 /** Re-derive and store `rounds.completed_hole_count` from the hole rows. */

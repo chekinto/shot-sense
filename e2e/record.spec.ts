@@ -36,9 +36,15 @@ test.describe("record a round", () => {
           putts: 2,
           teeOutcome: "Recovery",
           teeLie: "Trees / other",
+          approach: { result: "Missed", miss: "Right" },
         });
       } else {
-        await recordHole(page, { score: 4, shotsToZone: 2, putts: 2 });
+        await recordHole(page, {
+          score: 4,
+          shotsToZone: 2,
+          putts: 2,
+          approach: { result: "Green" },
+        });
       }
       await page.getByRole("button", { name: /save (& next|hole)/i }).click();
     }
@@ -63,6 +69,11 @@ test.describe("record a round", () => {
     const tee = page.getByText("Off the tee").locator("..");
     await expect(tee).toContainText("needed a recovery");
     await expect(tee).toContainText("hole 7");
+
+    // "Approach play" — 6 greens, 1 missed right (holes 3 and 5 logged no approach).
+    const approach = page.getByText("Approach play").locator("..");
+    await expect(approach).toContainText("6/7 found the green or zone");
+    await expect(approach).toContainText("1 right");
 
     // "This round" event-count observations.
     await expect(page.getByText(/1 penalty stroke on hole 3/i)).toBeVisible();

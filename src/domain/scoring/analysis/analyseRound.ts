@@ -4,6 +4,10 @@ import {
   type ApproachSuccess,
 } from "../calculations/approachSuccess";
 import {
+  calculateApproachBands,
+  type ApproachBandBreakdown,
+} from "../calculations/approachBands";
+import {
   calculateBenchmarkScorecard,
   type BenchmarkScorecard,
 } from "../calculations/benchmark";
@@ -40,6 +44,8 @@ export interface RoundAnalysis {
   benchmark: BenchmarkScorecard;
   /** Round-wide approach success, excluding picked-up holes (§9 correction). */
   approach: ApproachSuccess;
+  /** This round's approaches by distance band — counts only (correction #5). */
+  approachBands: ApproachBandBreakdown;
   /** Tee-shot picture, judged by consequence (§29–31). Event counts only. */
   tee: TeeContext;
   /** "This round" tier — event-count facts only (correction #8). */
@@ -58,6 +64,7 @@ export const analyseRound = (round: CompletedRound): RoundAnalysis => {
     shotsToGetBack: calculateRoundShotsToGetBack(round),
     benchmark: calculateBenchmarkScorecard(round),
     approach: calculateApproachSuccess(approachAttempts),
+    approachBands: calculateApproachBands(approachAttempts),
     tee: calculateTeeContext(round),
     observations: generateRoundObservations(round),
   };

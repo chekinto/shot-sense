@@ -12,13 +12,21 @@ import {
   TEE_LIES,
   TEE_OUTCOMES,
   calculateShotsFromZone,
+  toApproachAttempt,
   validateCompletedHole,
   type FirstPuttDistanceBand,
   type TeeLie,
   type TeeOutcome,
 } from "@/domain/scoring";
-import type { CompleteHoleValues, HolePatch, PlayHole } from "../types";
+import type { CompleteHoleValues, HolePatch, PlayApproach, PlayHole } from "../types";
+import { ApproachInput } from "./ApproachInput";
 import styles from "./HoleForm.module.css";
+
+const toAttempts = (approaches: PlayApproach[]) =>
+  approaches.flatMap((approach) => {
+    const attempt = toApproachAttempt(approach);
+    return attempt ? [attempt] : [];
+  });
 
 const FIRST_PUTT_LABELS: Record<FirstPuttDistanceBand, string> = {
   "under-5ft": "< 5 ft",
@@ -69,7 +77,15 @@ export const HoleForm = ({
   const [penaltyRevealed, setPenaltyRevealed] = useState(
     hole.penaltyStrokes > 0,
   );
+  const [approachRevealed, setApproachRevealed] = useState(
+    hole.approaches.length > 0,
+  );
   const [pending, startTransition] = useTransition();
+
+  const showApproaches = approachRevealed || hole.approaches.length > 0;
+  const incompleteApproach = hole.approaches.some(
+    (a) => a.result === "missed-zone" && !a.missDirection,
+  );
 
   // A penalty off the tee always means penalty strokes on the hole, so reveal
   // the stepper (correction #2 — the golfer still assigns them).
@@ -103,6 +119,10 @@ export const HoleForm = ({
 
   const save = () => {
     setErrors([]);
+    if (incompleteApproach) {
+      setErrors(["Pick a miss direction for each missed approach."]);
+      return;
+    }
     const check = validateCompletedHole({
       holeNumber: hole.holeNumber,
       par: hole.par,
@@ -111,6 +131,7 @@ export const HoleForm = ({
       putts: hole.putts ?? undefined,
       firstPuttDistance: hole.firstPuttDistance ?? undefined,
       penaltyStrokes: hole.penaltyStrokes,
+      approachAttempts: toAttempts(hole.approaches),
     });
     if (!check.ok) {
       setErrors(check.errors.map((e) => e.message));
@@ -126,6 +147,7 @@ export const HoleForm = ({
           firstPuttDistance: hole.firstPuttDistance,
           teeOutcome: hole.teeOutcome,
           teeLie: hole.teeLie,
+          approaches: hole.approaches,
           penaltyStrokes: hole.penaltyStrokes,
         });
       } catch {
@@ -249,6 +271,36 @@ export const HoleForm = ({
           add them below.
         </InlineNotice>
       ) : null}
+
+      {showApproaches ? (
+        <div>
+          <span className={styles.approachLabel}>Approach play</span>
+          <ApproachInput
+            approaches={hole.approaches}
+            onChange={(approaches) => onPatch({ approaches })}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.addEvent}
+          onClick={() => {
+            setApproachRevealed(true);
+            onPatch({
+              approaches: [
+                {
+                  sequence: 1,
+                  distanceBand: "150-174",
+                  result: "green",
+                  missDirection: null,
+                },
+              ],
+            });
+          }}
+        >
+          + Approach
+        </button>
+      )}
 
       {showPenalty ? (
         <Stepper

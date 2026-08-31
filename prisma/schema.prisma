@@ -180,8 +180,29 @@ model RoundHole {
   updatedAt         DateTime @updatedAt @map("updated_at")
   version           Int      @default(1)
 
-  round Round @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  round      Round               @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  approaches RoundHoleApproach[]
 
   @@unique([roundId, holeNumber])
   @@map("round_holes")
+}
+
+/// §32–35 / §94 — one approach attempt on a hole: a shot from outside the
+/// Scoring Zone aiming at the green or zone. Repeatable (a par 5 may have two).
+/// `distanceBand` / `result` / `missDirection` are stored as strings and mapped
+/// to domain enums at the mapper boundary (§101). `missDirection` is present iff
+/// `result` is `missed-zone`.
+model RoundHoleApproach {
+  id           String  @id @default(uuid()) @db.Uuid
+  roundHoleId  String  @map("round_hole_id") @db.Uuid
+  /// 1-based order the attempts were played in.
+  sequence     Int
+  distanceBand String  @map("distance_band")
+  result       String
+  missDirection String? @map("miss_direction")
+
+  roundHole RoundHole @relation(fields: [roundHoleId], references: [id], onDelete: Cascade)
+
+  @@unique([roundHoleId, sequence])
+  @@map("round_hole_approaches")
 }

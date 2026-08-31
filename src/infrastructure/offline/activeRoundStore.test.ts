@@ -14,6 +14,7 @@ const hole = (holeNumber: number, overrides: Partial<PlayHole> = {}): PlayHole =
   firstPuttDistance: null,
   teeOutcome: null,
   teeLie: null,
+  approaches: [],
   penaltyStrokes: 0,
   ...overrides,
 });
