@@ -31,6 +31,8 @@ const holeValidates = (hole: PlayHole): boolean =>
     putts: hole.putts ?? undefined,
     firstPuttDistance: hole.firstPuttDistance ?? undefined,
     penaltyStrokes: hole.penaltyStrokes,
+    bunkerShots: hole.bunkerShots,
+    bunkersVisited: hole.bunkersVisited,
   }).ok;
 
 const upsertSyncOp = async (
@@ -48,6 +50,9 @@ const upsertSyncOp = async (
     teeOutcome: hole.teeOutcome,
     teeLie: hole.teeLie,
     approaches: hole.approaches,
+    bunkerShots: hole.bunkerShots,
+    bunkersVisited: hole.bunkersVisited,
+    mistakes: hole.mistakes,
     penaltyStrokes: hole.penaltyStrokes,
     isComplete: hole.isComplete,
     updatedAt: Date.now(),

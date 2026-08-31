@@ -29,6 +29,9 @@ const hole = (
     firstPuttDistance: string | null;
     teeOutcome: string | null;
     teeLie: string | null;
+    bunkerShots: number;
+    bunkersVisited: number;
+    mistakes: string[];
     penaltyStrokes: number;
     approaches: {
       id: string;
@@ -54,6 +57,7 @@ const hole = (
   approaches: [],
   bunkerShots: 0,
   bunkersVisited: 0,
+  mistakes: [],
   penaltyStrokes: 0,
   isComplete,
   createdAt: new Date(),
@@ -197,6 +201,25 @@ describe("toPlayableRound", () => {
         missDirection: "left",
       },
     ]);
+  });
+
+  it("carries bunker counts and filters unrecognised mistake tags", () => {
+    const playable = toPlayableRound({
+      ...baseRound,
+      snapshot: null,
+      holes: [
+        hole(1, true, {
+          bunkerShots: 3,
+          bunkersVisited: 1,
+          mistakes: ["strategy", "not-real", "putting"],
+        }),
+      ],
+    });
+    expect(playable.holes[0]).toMatchObject({
+      bunkerShots: 3,
+      bunkersVisited: 1,
+      mistakes: ["strategy", "putting"],
+    });
   });
 
   it("carries tee outcome and lie, and nulls unrecognised values", () => {

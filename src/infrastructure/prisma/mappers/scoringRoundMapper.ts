@@ -8,6 +8,7 @@ import {
   APPROACH_RESULTS,
   FIRST_PUTT_DISTANCE_BANDS,
   MISS_DIRECTIONS,
+  MISTAKE_CATEGORIES,
   SCORING_ZONE_YARDS,
   TEE_LIES,
   TEE_OUTCOMES,
@@ -18,6 +19,7 @@ import {
   type CompletedRound,
   type FirstPuttDistanceBand,
   type MissDirection,
+  type MistakeCategory,
   type TeeLie,
   type TeeOutcome,
 } from "@/domain/scoring";
@@ -37,6 +39,11 @@ const asTeeLie = (value: string | null): TeeLie | undefined =>
   value !== null && (TEE_LIES as readonly string[]).includes(value)
     ? (value as TeeLie)
     : undefined;
+
+const asMistakes = (values: string[]): MistakeCategory[] =>
+  values.filter((v): v is MistakeCategory =>
+    (MISTAKE_CATEGORIES as readonly string[]).includes(v),
+  );
 
 /**
  * DB approach rows -> domain attempts. Rows with an unrecognised band or result,
@@ -78,8 +85,8 @@ const toApproachAttempts = (rows: PrismaApproach[]): ApproachAttempt[] =>
  * the way in (`assertCompletedHole`) — a hole marked complete has already
  * passed the same validator server-side, so this is a defensive backstop.
  *
- * Tee outcome/lie (Epic 7) and approach attempts (Epic 8) are carried through.
- * Mistakes join in Epic 9. `pickedUp` has no column yet — always `false`.
+ * Tee outcome/lie (Epic 7), approach attempts (Epic 8) and mistake tags (Epic 9)
+ * are carried through. `pickedUp` has no column yet — always `false`.
  */
 export const toScoringRound = (
   round: PrismaRound & {
@@ -107,6 +114,7 @@ export const toScoringRound = (
         teeOutcome: asTeeOutcome(h.teeOutcome),
         teeLie: asTeeLie(h.teeLie),
         approachAttempts: toApproachAttempts(h.approaches),
+        mistakes: asMistakes(h.mistakes),
       }),
     );
 

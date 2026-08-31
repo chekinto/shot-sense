@@ -81,7 +81,10 @@ const blowUpObservation = (
 const bunkerObservation = (
   holes: readonly CompletedScoringHole[],
 ): RoundObservation | null => {
-  const stuck = holes.filter((h) => h.bunkerShots >= 2);
+  // Per-bunker (correction #3): a single bunker that needed 2+ shots to escape.
+  const stuck = holes.filter(
+    (h) => h.bunkerShots - Math.max(h.bunkersVisited, 1) >= 1,
+  );
   if (stuck.length === 0) return null;
   return {
     id: "bunkers",
@@ -89,6 +92,38 @@ const bunkerObservation = (
     text: `${stuck.length} hole${stuck.length === 1 ? "" : "s"} needed 2 or more shots to escape a bunker (${holeNumbers([...stuck])}).`,
     weight: 55 + stuck.length * 5,
   };
+};
+
+const MISTAKE_LABELS: Record<string, string> = {
+  tee: "tee",
+  approach: "approach",
+  "short-game": "short game",
+  putting: "putting",
+  strategy: "strategy",
+  recovery: "recovery",
+  other: "other",
+};
+
+const mistakeObservation = (
+  holes: readonly CompletedScoringHole[],
+): RoundObservation | null => {
+  const tags = holes.flatMap((h) => h.mistakes);
+  if (tags.length < 2) return null;
+
+  const flaggedHoles = holes
+    .filter((h) => h.mistakes.length > 0)
+    .map((h) => h.holeNumber);
+  const counts = new Map<string, number>();
+  for (const tag of tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  const [topTag, topCount] = [...counts.entries()].sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  )[0]!;
+
+  let text = `You flagged ${tags.length} mistakes this round on ${flaggedHoles.length} hole${flaggedHoles.length === 1 ? "" : "s"} (${flaggedHoles.join(", ")}).`;
+  if (topCount >= 2) {
+    text += ` Most often ${MISTAKE_LABELS[topTag] ?? topTag} (${topCount}).`;
+  }
+  return { id: "mistakes", basis: "event-count", text, weight: 45 + tags.length * 3 };
 };
 
 const teeShotObservation = (
@@ -204,6 +239,7 @@ export const generateRoundObservations = (
     blowUpObservation(played),
     threePuttObservation(played),
     bunkerObservation(played),
+    mistakeObservation(played),
     teeShotObservation(played),
     approachMissObservation(played),
     nineSplitObservation(round),

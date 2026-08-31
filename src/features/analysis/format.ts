@@ -1,6 +1,8 @@
 import {
   MISS_DIRECTIONS,
+  MISTAKE_CATEGORIES,
   type ApproachBandBreakdown,
+  type FaultSummary,
   type HoleResult,
   type SectionSummary,
   type TeeContext,
@@ -54,4 +56,23 @@ export const teeOutcomeBreakdown = (tee: TeeContext): string =>
 export const missBreakdown = (misses: ApproachBandBreakdown["misses"]): string =>
   MISS_DIRECTIONS.filter((direction) => misses[direction] > 0)
     .map((direction) => `${misses[direction]} ${direction}`)
+    .join(" · ");
+
+const MISTAKE_WORDS: Record<string, string> = {
+  tee: "tee",
+  approach: "approach",
+  "short-game": "short game",
+  putting: "putting",
+  strategy: "strategy",
+  recovery: "recovery",
+  other: "other",
+};
+
+/** "2 strategy · 1 approach" — flagged mistake categories, most-frequent first. */
+export const mistakeBreakdown = (
+  counts: FaultSummary["mistakeCounts"],
+): string =>
+  MISTAKE_CATEGORIES.filter((category) => counts[category] > 0)
+    .sort((a, b) => counts[b] - counts[a] || a.localeCompare(b))
+    .map((category) => `${counts[category]} ${MISTAKE_WORDS[category] ?? category}`)
     .join(" · ");

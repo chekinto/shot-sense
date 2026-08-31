@@ -20,6 +20,7 @@ import {
 } from "@/domain/scoring";
 import type { CompleteHoleValues, HolePatch, PlayApproach, PlayHole } from "../types";
 import { ApproachInput } from "./ApproachInput";
+import { MistakeTags } from "./MistakeTags";
 import styles from "./HoleForm.module.css";
 
 const toAttempts = (approaches: PlayApproach[]) =>
@@ -80,12 +81,27 @@ export const HoleForm = ({
   const [approachRevealed, setApproachRevealed] = useState(
     hole.approaches.length > 0,
   );
+  const [bunkerRevealed, setBunkerRevealed] = useState(hole.bunkerShots > 0);
+  const [mistakesRevealed, setMistakesRevealed] = useState(
+    hole.mistakes.length > 0,
+  );
   const [pending, startTransition] = useTransition();
 
   const showApproaches = approachRevealed || hole.approaches.length > 0;
   const incompleteApproach = hole.approaches.some(
     (a) => a.result === "missed-zone" && !a.missDirection,
   );
+  const showBunker = bunkerRevealed || hole.bunkerShots > 0;
+  const showMistakes = mistakesRevealed || hole.mistakes.length > 0;
+
+  const setBunkerShots = (bunkerShots: number) => {
+    // Keep bunkers-visited in the valid band: ≥ 1 once there's a shot, ≤ shots.
+    const bunkersVisited =
+      bunkerShots === 0
+        ? 0
+        : Math.min(Math.max(hole.bunkersVisited, 1), bunkerShots);
+    onPatch({ bunkerShots, bunkersVisited });
+  };
 
   // A penalty off the tee always means penalty strokes on the hole, so reveal
   // the stepper (correction #2 — the golfer still assigns them).
@@ -131,6 +147,8 @@ export const HoleForm = ({
       putts: hole.putts ?? undefined,
       firstPuttDistance: hole.firstPuttDistance ?? undefined,
       penaltyStrokes: hole.penaltyStrokes,
+      bunkerShots: hole.bunkerShots,
+      bunkersVisited: hole.bunkersVisited,
       approachAttempts: toAttempts(hole.approaches),
     });
     if (!check.ok) {
@@ -148,6 +166,9 @@ export const HoleForm = ({
           teeOutcome: hole.teeOutcome,
           teeLie: hole.teeLie,
           approaches: hole.approaches,
+          bunkerShots: hole.bunkerShots,
+          bunkersVisited: hole.bunkersVisited,
+          mistakes: hole.mistakes,
           penaltyStrokes: hole.penaltyStrokes,
         });
       } catch {
@@ -302,6 +323,36 @@ export const HoleForm = ({
         </button>
       )}
 
+      {showBunker ? (
+        <div className={styles.bunker}>
+          <Stepper
+            label="Bunker shots"
+            value={hole.bunkerShots}
+            min={0}
+            max={8}
+            onChange={setBunkerShots}
+          />
+          {hole.bunkerShots > 0 ? (
+            <Stepper
+              label="Bunkers visited"
+              value={hole.bunkersVisited}
+              min={1}
+              max={hole.bunkerShots}
+              hint="Two clean escapes from two bunkers isn't a lost shot."
+              onChange={(bunkersVisited) => onPatch({ bunkersVisited })}
+            />
+          ) : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.addEvent}
+          onClick={() => setBunkerRevealed(true)}
+        >
+          + Bunker
+        </button>
+      )}
+
       {showPenalty ? (
         <Stepper
           label="Penalty strokes"
@@ -317,6 +368,24 @@ export const HoleForm = ({
           onClick={() => setPenaltyRevealed(true)}
         >
           + Penalty
+        </button>
+      )}
+
+      {showMistakes ? (
+        <div>
+          <span className={styles.approachLabel}>What cost you shots?</span>
+          <MistakeTags
+            value={hole.mistakes}
+            onChange={(mistakes) => onPatch({ mistakes })}
+          />
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.addEvent}
+          onClick={() => setMistakesRevealed(true)}
+        >
+          + Mistake
         </button>
       )}
 

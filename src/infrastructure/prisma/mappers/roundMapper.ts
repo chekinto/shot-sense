@@ -10,12 +10,14 @@ import {
   APPROACH_RESULTS,
   FIRST_PUTT_DISTANCE_BANDS,
   MISS_DIRECTIONS,
+  MISTAKE_CATEGORIES,
   TEE_LIES,
   TEE_OUTCOMES,
   type ApproachDistanceBand,
   type ApproachResult,
   type FirstPuttDistanceBand,
   type MissDirection,
+  type MistakeCategory,
   type TeeLie,
   type TeeOutcome,
 } from "@/domain/scoring";
@@ -58,6 +60,11 @@ const asMissDirection = (value: string | null): MissDirection | null =>
     ? (value as MissDirection)
     : null;
 
+const asMistakes = (values: string[]): MistakeCategory[] =>
+  values.filter((v): v is MistakeCategory =>
+    (MISTAKE_CATEGORIES as readonly string[]).includes(v),
+  );
+
 /** Rows with an unrecognised band/result are dropped; sequences are re-numbered. */
 const toPlayApproaches = (rows: PrismaApproach[]): PlayApproach[] =>
   [...rows]
@@ -93,6 +100,9 @@ export const toPlayHole = (h: PrismaHoleWithApproaches): PlayHole => ({
   teeOutcome: asTeeOutcome(h.teeOutcome),
   teeLie: asTeeLie(h.teeLie),
   approaches: toPlayApproaches(h.approaches),
+  bunkerShots: h.bunkerShots,
+  bunkersVisited: h.bunkersVisited,
+  mistakes: asMistakes(h.mistakes),
   penaltyStrokes: h.penaltyStrokes,
 });
 

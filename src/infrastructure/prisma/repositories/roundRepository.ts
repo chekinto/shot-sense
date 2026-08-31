@@ -199,6 +199,8 @@ export const roundRepository = {
         firstPuttDistance:
           (row.firstPuttDistance as PlayHole["firstPuttDistance"]) ?? undefined,
         penaltyStrokes: row.penaltyStrokes,
+        bunkerShots: row.bunkerShots,
+        bunkersVisited: row.bunkersVisited,
       }).ok;
       if (!stillValid) {
         row = await prisma.roundHole.update({

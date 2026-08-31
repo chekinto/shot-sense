@@ -17,6 +17,9 @@ const hole = (overrides: Partial<PlayHole> = {}): PlayHole => ({
   teeOutcome: null,
   teeLie: null,
   approaches: [],
+  bunkerShots: 0,
+  bunkersVisited: 0,
+  mistakes: [],
   penaltyStrokes: 0,
   ...overrides,
 });
@@ -112,6 +115,53 @@ describe("HoleForm", () => {
   it("nudges when a tee penalty has no penalty strokes on the hole", () => {
     renderForm(hole({ teeOutcome: "penalty", penaltyStrokes: 0 }));
     expect(screen.getByText(/no penalty strokes yet/i)).toBeInTheDocument();
+  });
+
+  it("reveals bunker steppers and defaults bunkers-visited to 1", async () => {
+    const user = userEvent.setup();
+    const { onPatch } = renderForm(hole());
+    await user.click(screen.getByRole("button", { name: /\+ bunker/i }));
+    await user.click(screen.getByRole("button", { name: /increase bunker shots/i }));
+    expect(onPatch).toHaveBeenLastCalledWith({ bunkerShots: 1, bunkersVisited: 1 });
+  });
+
+  it("shows the bunkers-visited stepper only once there are bunker shots", () => {
+    renderForm(hole({ bunkerShots: 2, bunkersVisited: 1 }));
+    expect(
+      screen.getByRole("group", { name: "Bunkers visited" }),
+    ).toBeInTheDocument();
+  });
+
+  it("reveals mistake chips and toggles them", async () => {
+    const user = userEvent.setup();
+    const { onPatch } = renderForm(hole());
+    await user.click(screen.getByRole("button", { name: /\+ mistake/i }));
+    await user.click(screen.getByRole("button", { name: "Strategy" }));
+    expect(onPatch).toHaveBeenLastCalledWith({ mistakes: ["strategy"] });
+  });
+
+  it("passes bunker counts and mistakes to onComplete", async () => {
+    const user = userEvent.setup();
+    const { onComplete } = renderForm(
+      hole({
+        score: 6,
+        shotsToZone: 2,
+        putts: 2,
+        firstPuttDistance: "5-15ft",
+        bunkerShots: 2,
+        bunkersVisited: 1,
+        mistakes: ["short-game"],
+      }),
+    );
+    await user.click(screen.getByRole("button", { name: /save & next/i }));
+    expect(onComplete).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        bunkerShots: 2,
+        bunkersVisited: 1,
+        mistakes: ["short-game"],
+      }),
+    );
   });
 
   it("reveals the approach section and seeds a first attempt", async () => {

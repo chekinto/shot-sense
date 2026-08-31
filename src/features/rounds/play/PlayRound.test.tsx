@@ -36,6 +36,9 @@ const playHole = (holeNumber: number): PlayHole => ({
   teeOutcome: null,
   teeLie: null,
   approaches: [],
+  bunkerShots: 0,
+  bunkersVisited: 0,
+  mistakes: [],
   penaltyStrokes: 0,
 });
 

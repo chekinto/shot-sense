@@ -174,6 +174,9 @@ model RoundHole {
   teeLie            String?  @map("tee_lie")
   bunkerShots       Int      @default(0) @map("bunker_shots")
   bunkersVisited    Int      @default(0) @map("bunkers_visited")
+  /// §40 broad mistake categories — free of order; duplicates carry a severity
+  /// signal (§47). Stored as plain strings, mapped to domain enums at the boundary.
+  mistakes          String[] @default([])
   penaltyStrokes    Int      @default(0) @map("penalty_strokes")
   isComplete        Boolean  @default(false) @map("is_complete")
   createdAt         DateTime @default(now()) @map("created_at")

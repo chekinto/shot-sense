@@ -96,6 +96,55 @@ describe("generateRoundObservations", () => {
     expect(tee?.text).toMatch(/1 of them drew a penalty stroke/i);
   });
 
+  it("flags a bunker only when one bunker needed 2+ shots (per-bunker)", () => {
+    const round = completedRound([
+      completedHole({
+        holeNumber: 1,
+        score: 6,
+        shotsToZone: 3,
+        putts: 2,
+        bunkerShots: 2,
+        bunkersVisited: 2,
+      }), // two clean escapes — not flagged
+      completedHole({
+        holeNumber: 2,
+        score: 6,
+        shotsToZone: 2,
+        putts: 2,
+        bunkerShots: 3,
+        bunkersVisited: 1,
+      }), // stuck
+      completedHole({ holeNumber: 3 }),
+    ]);
+    const bunkers = generateRoundObservations(round).find(
+      (o) => o.id === "bunkers",
+    );
+    expect(bunkers?.text).toMatch(/1 hole needed 2 or more shots to escape a bunker \(2\)/);
+  });
+
+  it("flags flagged mistakes and the most common category", () => {
+    const round = completedRound([
+      completedHole({ holeNumber: 1, mistakes: ["strategy"] }),
+      completedHole({ holeNumber: 2, mistakes: ["strategy", "putting"] }),
+      completedHole({ holeNumber: 3 }),
+    ]);
+    const mistakes = generateRoundObservations(round).find(
+      (o) => o.id === "mistakes",
+    );
+    expect(mistakes?.text).toMatch(/flagged 3 mistakes this round on 2 holes \(1, 2\)/);
+    expect(mistakes?.text).toMatch(/most often strategy \(2\)/i);
+  });
+
+  it("does not flag a single mistake tag", () => {
+    const round = completedRound([
+      completedHole({ holeNumber: 1, mistakes: ["tee"] }),
+      completedHole({ holeNumber: 2 }),
+    ]);
+    expect(
+      generateRoundObservations(round).some((o) => o.id === "mistakes"),
+    ).toBe(false);
+  });
+
   it("flags approach misses and their dominant direction", () => {
     const holes = eighteenPars().map((h, i) => {
       if (i < 3)

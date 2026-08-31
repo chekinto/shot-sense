@@ -72,6 +72,9 @@ export const recordHole = async (
     teeLie?: string;
     /** Records one approach attempt on this hole. */
     approach?: { result: string; miss?: string };
+    bunker?: { shots: number; visited: number };
+    /** Chip labels to tap in the mistakes group, e.g. ["Strategy"]. */
+    mistakes?: string[];
   },
 ): Promise<void> => {
   await bump(page, /increase score/i, values.score);
@@ -105,6 +108,21 @@ export const recordHole = async (
         .getByRole("radiogroup", { name: /approach 1 miss direction/i })
         .getByRole("radio", { name: values.approach.miss })
         .click();
+    }
+  }
+
+  if (values.bunker) {
+    await page.getByRole("button", { name: /\+ bunker/i }).click();
+    await bump(page, /increase bunker shots/i, values.bunker.shots);
+    // Bunkers visited defaults to 1 once there are shots; bump up to the target.
+    await bump(page, /increase bunkers visited/i, values.bunker.visited - 1);
+  }
+
+  if (values.mistakes) {
+    await page.getByRole("button", { name: /\+ mistake/i }).click();
+    const group = page.getByRole("group", { name: /mistakes/i });
+    for (const label of values.mistakes) {
+      await group.getByRole("button", { name: label }).click();
     }
   }
 

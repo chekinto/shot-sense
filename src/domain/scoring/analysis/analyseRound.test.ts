@@ -20,6 +20,24 @@ describe("analyseRound", () => {
     expect(analysis.benchmark.leakHoles).toEqual([]);
   });
 
+  it("surfaces mistake tags and bunker trouble", () => {
+    const analysis = analyseRound(
+      completedRound([
+        completedHole({ holeNumber: 1, mistakes: ["strategy"] }),
+        completedHole({
+          holeNumber: 2,
+          score: 6,
+          shotsToZone: 2,
+          putts: 2,
+          bunkerShots: 3,
+          bunkersVisited: 1,
+        }),
+      ]),
+    );
+    expect(analysis.faults.totalMistakes).toBe(1);
+    expect(analysis.faults.bunkerStuckHoles).toEqual([2]);
+  });
+
   it("breaks approaches out by band (counts only)", () => {
     const analysis = analyseRound(
       completedRound([

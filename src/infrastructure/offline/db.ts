@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { PlayApproach, PlayHole } from "@/features/rounds/types";
+import type { MistakeCategory } from "@/domain/scoring";
 
 /** A round mirrored to this device so it survives going offline (§21, §22). */
 export interface StoredActiveRound {
@@ -33,6 +34,9 @@ export interface HoleSyncOp {
   teeOutcome: PlayHole["teeOutcome"];
   teeLie: PlayHole["teeLie"];
   approaches: PlayApproach[];
+  bunkerShots: number;
+  bunkersVisited: number;
+  mistakes: MistakeCategory[];
   penaltyStrokes: number;
   isComplete: boolean;
   updatedAt: number;

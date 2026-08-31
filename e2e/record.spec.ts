@@ -28,7 +28,13 @@ test.describe("record a round", () => {
       if (holeNumber === 3) {
         await recordHole(page, { score: 6, shotsToZone: 3, putts: 2, penalty: 1 });
       } else if (holeNumber === 5) {
-        await recordHole(page, { score: 6, shotsToZone: 2, putts: 3 });
+        await recordHole(page, {
+          score: 6,
+          shotsToZone: 2,
+          putts: 3,
+          bunker: { shots: 3, visited: 1 },
+          mistakes: ["Strategy", "Short game"],
+        });
       } else if (holeNumber === 7) {
         await recordHole(page, {
           score: 4,
@@ -60,10 +66,15 @@ test.describe("record a round", () => {
     await expect(page.getByText(/got down in three/i)).toBeVisible();
     await expect(page.getByText(/where shots leaked/i)).toBeVisible();
 
-    // Shots to Get Back = 1 penalty + 1 putting.
+    // Shots to Get Back = 1 penalty (h3) + 1 putting (h5) + 2 bunker (h5, stuck).
     const stgb = page.getByText("Shots to get back").locator("..");
-    await expect(stgb).toContainText("2");
-    await expect(stgb).toContainText("1 penalty");
+    await expect(stgb).toContainText("1 penalty · 1 putting · 2 bunker");
+
+    // "Mistakes & bunkers" card.
+    const faults = page.getByText("Mistakes & bunkers").locator("..");
+    await expect(faults).toContainText("1 short game · 1 strategy");
+    await expect(faults).toContainText("In a bunker on 1 hole (5)");
+    await expect(faults).toContainText("needed 2+ to escape on 5");
 
     // "Off the tee" — one recovery recorded on hole 7.
     const tee = page.getByText("Off the tee").locator("..");
