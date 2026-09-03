@@ -45,6 +45,41 @@ export interface StartRoundData {
   holes: { holeNumber: number; par: number; yardage: number | null }[];
 }
 
+export interface CoarseHoleInput {
+  holeNumber: number;
+  par: number;
+  score: number;
+  shotsToZone: number;
+  putts: number;
+  penaltyStrokes: number;
+}
+
+export interface CoarseRoundData {
+  userId: string;
+  courseName: string;
+  playedOn: Date;
+  handicapAtStart: number | null;
+  holes: CoarseHoleInput[];
+}
+
+export interface CompletedRoundListItem {
+  id: string;
+  courseName: string;
+  playedOn: Date;
+  holesPlayed: number;
+  score: number;
+  toPar: number;
+  dataCompleteness: "full" | "coarse";
+}
+
+export interface CoarseRoundEdit {
+  id: string;
+  courseName: string;
+  playedOn: Date;
+  handicapAtStart: number | null;
+  holes: CoarseHoleInput[];
+}
+
 const withSnapshotAndHoles = {
   snapshot: true,
   holes: { include: { approaches: true } },
@@ -120,26 +155,167 @@ export const roundRepository = {
     });
   },
 
-  /** The user's completed round before `beforeCompletedAt`, for a benchmark comparison. */
-  async findPreviousCompletedRow(
+  /**
+   * The user's most recent completed rounds before `beforeCompletedAt` (or all,
+   * when null), newest first, for the rolling personal baseline (Epic 11).
+   */
+  async recentCompletedRows(
     userId: string,
     beforeCompletedAt: Date | null,
+    limit: number,
   ) {
-    return prisma.round.findFirst({
+    return prisma.round.findMany({
       where: {
         userId,
         status: "COMPLETED",
-        ...(beforeCompletedAt
-          ? { completedAt: { lt: beforeCompletedAt } }
-          : {}),
+        ...(beforeCompletedAt ? { completedAt: { lt: beforeCompletedAt } } : {}),
       },
       orderBy: { completedAt: "desc" },
+      take: limit,
       include: withHolesAndApproaches,
     });
   },
 
   async countCompleted(userId: string): Promise<number> {
     return prisma.round.count({ where: { userId, status: "COMPLETED" } });
+  },
+
+  /** Completed rounds for the history page — lightweight, newest first. */
+  async listCompleted(userId: string): Promise<CompletedRoundListItem[]> {
+    const rows = await prisma.round.findMany({
+      where: { userId, status: "COMPLETED" },
+      orderBy: [{ playedOn: "desc" }, { completedAt: "desc" }],
+      include: {
+        snapshot: { select: { courseName: true } },
+        holes: { select: { score: true, par: true, isComplete: true } },
+      },
+    });
+    return rows.map((row) => {
+      const played = row.holes.filter((h) => h.isComplete);
+      const score = played.reduce((sum, h) => sum + (h.score ?? 0), 0);
+      const par = played.reduce((sum, h) => sum + h.par, 0);
+      return {
+        id: row.id,
+        courseName: row.snapshot?.courseName ?? "Round",
+        playedOn: row.playedOn,
+        holesPlayed: played.length,
+        score,
+        toPar: score - par,
+        dataCompleteness: row.dataCompleteness === "COARSE" ? "coarse" : "full",
+      };
+    });
+  },
+
+  /** Hard-delete a round the user owns (holes + snapshot cascade). */
+  async deleteById(userId: string, roundId: string): Promise<void> {
+    const { count } = await prisma.round.deleteMany({
+      where: { id: roundId, userId },
+    });
+    if (count === 0) throw new RoundNotEditableError();
+  },
+
+  /** Create a finished, coarse historical round in one write (Epic 11, #9). */
+  async createCoarse(data: CoarseRoundData): Promise<string> {
+    const now = new Date();
+    const round = await prisma.round.create({
+      data: {
+        userId: data.userId,
+        courseId: null,
+        teeSetId: null,
+        playedOn: data.playedOn,
+        plannedHoleCount: data.holes.length === 9 ? 9 : 18,
+        completedHoleCount: data.holes.length,
+        handicapAtStart: data.handicapAtStart,
+        scoringZoneYards: SCORING_ZONE_YARDS,
+        status: "COMPLETED",
+        dataCompleteness: "COARSE",
+        methodologyVersion: METHODOLOGY_VERSION,
+        completedAt: now,
+        snapshot: { create: { courseName: data.courseName, teeName: null } },
+        holes: {
+          create: data.holes.map((hole) => ({
+            holeNumber: hole.holeNumber,
+            par: hole.par,
+            score: hole.score,
+            shotsToZone: hole.shotsToZone,
+            putts: hole.putts,
+            penaltyStrokes: hole.penaltyStrokes,
+            isComplete: true,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    return round.id;
+  },
+
+  /** Rewrite a coarse round's snapshot + holes wholesale (Epic 11 edit). */
+  async updateCoarse(
+    userId: string,
+    roundId: string,
+    data: Omit<CoarseRoundData, "userId">,
+  ): Promise<void> {
+    const round = await prisma.round.findFirst({
+      where: { id: roundId, userId, dataCompleteness: "COARSE" },
+      select: { id: true },
+    });
+    if (!round) throw new RoundNotEditableError();
+
+    await prisma.$transaction([
+      prisma.roundCourseSnapshot.update({
+        where: { roundId },
+        data: { courseName: data.courseName },
+      }),
+      prisma.roundHole.deleteMany({ where: { roundId } }),
+      prisma.roundHole.createMany({
+        data: data.holes.map((hole) => ({
+          roundId,
+          holeNumber: hole.holeNumber,
+          par: hole.par,
+          score: hole.score,
+          shotsToZone: hole.shotsToZone,
+          putts: hole.putts,
+          penaltyStrokes: hole.penaltyStrokes,
+          isComplete: true,
+        })),
+      }),
+      prisma.round.update({
+        where: { id: roundId },
+        data: {
+          playedOn: data.playedOn,
+          handicapAtStart: data.handicapAtStart,
+          plannedHoleCount: data.holes.length === 9 ? 9 : 18,
+          completedHoleCount: data.holes.length,
+          version: { increment: 1 },
+        },
+      }),
+    ]);
+  },
+
+  /** A coarse round's editable shape, or null. */
+  async findCoarseForEdit(
+    userId: string,
+    roundId: string,
+  ): Promise<CoarseRoundEdit | null> {
+    const row = await prisma.round.findFirst({
+      where: { id: roundId, userId, dataCompleteness: "COARSE" },
+      include: { snapshot: true, holes: { orderBy: { holeNumber: "asc" } } },
+    });
+    if (!row) return null;
+    return {
+      id: row.id,
+      courseName: row.snapshot?.courseName ?? "",
+      playedOn: row.playedOn,
+      handicapAtStart: row.handicapAtStart?.toNumber() ?? null,
+      holes: row.holes.map((h) => ({
+        holeNumber: h.holeNumber,
+        par: h.par,
+        score: h.score ?? 0,
+        shotsToZone: h.shotsToZone ?? 0,
+        putts: h.putts ?? 0,
+        penaltyStrokes: h.penaltyStrokes,
+      })),
+    };
   },
 
   /**

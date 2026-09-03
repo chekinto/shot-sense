@@ -60,6 +60,32 @@ const bump = async (page: Page, label: RegExp, times: number) => {
   for (let i = 0; i < times; i += 1) await button.click();
 };
 
+/**
+ * Add a coarse historical round via /rounds/backfill. Grid defaults to 9 clean
+ * pars; `holeOne` overrides hole 1's cells to make the round distinct.
+ */
+export const backfillRound = async (
+  page: Page,
+  opts: {
+    courseName: string;
+    holeOne?: { score?: number; putts?: number };
+  },
+): Promise<void> => {
+  await page.goto("/rounds/backfill");
+  await page.getByLabel("Course").fill(opts.courseName);
+  await page.getByRole("radiogroup", { name: "Holes" }).getByRole("radio", { name: "9" }).click();
+
+  if (opts.holeOne?.score !== undefined) {
+    await page.getByLabel("Hole 1 score").fill(String(opts.holeOne.score));
+  }
+  if (opts.holeOne?.putts !== undefined) {
+    await page.getByLabel("Hole 1 putts").fill(String(opts.holeOne.putts));
+  }
+
+  await page.getByRole("button", { name: /save round/i }).click();
+  await expect(page).toHaveURL(/\/rounds\/[0-9a-f-]+\/summary$/);
+};
+
 /** Fill in the current hole's steppers on the play screen. */
 export const recordHole = async (
   page: Page,

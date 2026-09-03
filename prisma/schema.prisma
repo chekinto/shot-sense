@@ -114,6 +114,17 @@ enum RoundStatus {
   @@map("round_status")
 }
 
+/// §9 correction — FULL rounds carry every input; COARSE rounds are historical
+/// backfills with score / shots-to-zone / putts / penalties only. The analysis
+/// engine excludes COARSE rounds from any comparison that leans on the fields
+/// they lack (tee, approach, bunker, mistakes).
+enum RoundDataCompleteness {
+  FULL
+  COARSE
+
+  @@map("round_data_completeness")
+}
+
 /// A round of golf (§82). `courseId` / `teeSetId` are nullable and SET NULL on
 /// delete so historical rounds survive deletion of the saved course (§91).
 /// The round's own snapshot (name, tee, per-hole par/yardage) is authoritative
@@ -129,6 +140,7 @@ model Round {
   handicapAtStart    Decimal?    @map("handicap_at_start") @db.Decimal(4, 1)
   scoringZoneYards   Int         @map("scoring_zone_yards")
   status             RoundStatus @default(IN_PROGRESS)
+  dataCompleteness   RoundDataCompleteness @default(FULL) @map("data_completeness")
   methodologyVersion String      @map("methodology_version")
   version            Int         @default(1)
   createdAt          DateTime    @default(now()) @map("created_at")

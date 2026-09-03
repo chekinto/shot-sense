@@ -98,3 +98,7 @@ export const biggestLeakLine = (top: CategoryPriority): string => {
   const holes = `${top.frequency} hole${top.frequency === 1 ? "" : "s"}`;
   return `your ${categoryLabel(top.category)} leaked the most — about ${shots} across ${holes}`;
 };
+
+/** A per-hole baseline rate scaled to this round's hole count, e.g. "~9/18". */
+export const baselineCount = (rate: number, of: number): string =>
+  `~${Math.round(rate * of)}/${of}`;

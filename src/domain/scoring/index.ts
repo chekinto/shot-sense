@@ -35,6 +35,7 @@ export {
 } from "./models/hole";
 export {
   type CompletedRound,
+  type RoundDataCompleteness,
   FRONT_NINE_HOLES,
   BACK_NINE_HOLES,
   isFrontNine,
@@ -103,6 +104,13 @@ export {
   type CategoryPriority,
   type CategoryPriorityAnalysis,
 } from "./recommendations/categoryPriority";
+export {
+  calculatePersonalBaseline,
+  BASELINE_WINDOW,
+  BASELINE_MIN_ROUNDS,
+  type PersonalBaseline,
+  type BaselineConfidence,
+} from "./recommendations/personalBaseline";
 
 // ---- Analysis ----
 export { analyseRound, type RoundAnalysis } from "./analysis/analyseRound";

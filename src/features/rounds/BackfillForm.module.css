@@ -1,0 +1,64 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.error {
+  color: var(--color-danger, #b00020);
+  font-size: var(--text-sm);
+}
+
+.gridWrap {
+  overflow-x: auto;
+}
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.grid th,
+.grid td {
+  padding: var(--space-1) var(--space-2);
+  text-align: center;
+}
+
+.grid thead th {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.grid tbody th[scope="row"] {
+  color: var(--color-text-muted);
+}
+
+.grid tfoot th,
+.grid tfoot td {
+  border-top: 1px solid var(--color-border);
+  font-weight: var(--weight-semibold);
+}
+
+.rowError td,
+.rowError th {
+  background-color: var(--color-danger-soft, rgba(176, 0, 32, 0.08));
+}
+
+.cell {
+  width: 3.5rem;
+  min-height: var(--tap-target-min);
+  padding: var(--space-1);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.toPar {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}

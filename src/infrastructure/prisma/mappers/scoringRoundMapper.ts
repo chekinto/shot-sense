@@ -87,12 +87,18 @@ const toApproachAttempts = (rows: PrismaApproach[]): ApproachAttempt[] =>
  *
  * Tee outcome/lie (Epic 7), approach attempts (Epic 8) and mistake tags (Epic 9)
  * are carried through. `pickedUp` has no column yet — always `false`.
+ *
+ * COARSE rounds (Epic 11, #9) carry no first-putt distance; the domain still
+ * requires one whenever putts > 0, so a neutral mid band is substituted. It
+ * never claims "long range" and never earns the long-lag discount — the right
+ * default when the distance is genuinely unknown.
  */
 export const toScoringRound = (
   round: PrismaRound & {
     holes: (PrismaRoundHole & { approaches: PrismaApproach[] })[];
   },
 ): CompletedRound => {
+  const coarse = round.dataCompleteness === "COARSE";
   const holes = round.holes
     .filter((h) => h.isComplete)
     .sort((a, b) => a.holeNumber - b.holeNumber)
@@ -106,7 +112,9 @@ export const toScoringRound = (
         putts: h.putts ?? undefined,
         firstPuttDistance:
           h.putts !== null && h.putts > 0
-            ? asBand(h.firstPuttDistance)
+            ? coarse
+              ? "15-30ft"
+              : asBand(h.firstPuttDistance)
             : undefined,
         penaltyStrokes: h.penaltyStrokes,
         bunkerShots: h.bunkerShots,
@@ -127,5 +135,6 @@ export const toScoringRound = (
     plannedHoleCount: round.plannedHoleCount === 9 ? 9 : 18,
     holes,
     methodologyVersion: round.methodologyVersion,
+    dataCompleteness: round.dataCompleteness === "COARSE" ? "coarse" : "full",
   };
 };

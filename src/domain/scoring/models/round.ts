@@ -8,6 +8,13 @@ import type { PlannedHoleCount } from "./enums";
  * carries whichever 9 were played, identified by `holeNumber` (§20 — never
  * assume they are 1–9).
  */
+/**
+ * §9 correction — `full` rounds carry every input; `coarse` rounds are
+ * historical backfills with score / shots-to-zone / putts / penalties only.
+ * Field-dependent comparisons must exclude `coarse` rounds.
+ */
+export type RoundDataCompleteness = "full" | "coarse";
+
 export interface CompletedRound {
   id: string;
   /** Always 100 in V1; stored so a future configurable zone never rewrites history. */
@@ -16,6 +23,8 @@ export interface CompletedRound {
   plannedHoleCount: PlannedHoleCount;
   holes: readonly CompletedScoringHole[];
   methodologyVersion: MethodologyVersion | string;
+  /** Defaults to `full` when absent (every round recorded in-app). */
+  dataCompleteness?: RoundDataCompleteness;
 }
 
 /** Front nine = holes 1–9, back nine = holes 10–18. */
