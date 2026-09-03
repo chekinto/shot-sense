@@ -38,6 +38,17 @@ test.describe("historical round backfill + baseline", () => {
     await expect(yourGame).toContainText("Focus");
     await expect(yourGame).toContainText(/putting/i);
 
+    // The trends page renders once there are 3 rounds.
+    await yourGame.getByRole("link", { name: /see your trends/i }).click();
+    await expect(page).toHaveURL(/\/trends$/);
+    await expect(
+      page.getByRole("heading", { name: /against the benchmark/i }),
+    ).toBeVisible();
+    await expect(page.getByText(/entered in regulation/i)).toBeVisible();
+    await expect(
+      page.getByText(/band-level patterns unlock after about 15 rounds/i),
+    ).toBeVisible();
+
     // Edit the third round: fix hole 1 back to a par.
     await page.goto("/rounds");
     await page

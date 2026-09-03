@@ -15,9 +15,14 @@ const RoundsPage = async () => {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1 className={styles.title}>Your rounds</h1>
-        <Link href="/rounds/backfill" className={styles.add}>
-          Add past round
-        </Link>
+        <div className={styles.headerActions}>
+          <Link href="/trends" className={styles.action}>
+            Trends
+          </Link>
+          <Link href="/rounds/backfill" className={styles.add}>
+            Add past round
+          </Link>
+        </div>
       </header>
 
       {rounds.length === 0 ? (

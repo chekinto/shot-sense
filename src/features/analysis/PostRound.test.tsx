@@ -62,6 +62,24 @@ describe("PostRound", () => {
     expect(screen.getByText(/this round, your .+ leaked the most/i)).toBeInTheDocument();
   });
 
+  it("organises the screen into Facts / This round / Your game tiers", () => {
+    render(<PostRound view={view()} />);
+    expect(screen.getByRole("heading", { name: "Facts" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "This round" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Your game" }),
+    ).toBeInTheDocument();
+  });
+
+  it("shows a trend teaser once there are enough rounds", () => {
+    render(<PostRound view={view({ completedRoundCount: 4 })} />);
+    expect(
+      screen.getByRole("link", { name: /see your trends/i }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the recent-form baseline and its caveat when present", () => {
     render(
       <PostRound

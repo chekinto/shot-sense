@@ -54,12 +54,17 @@ const DashboardPage = async () => {
       <section className={styles.card}>
         <h2>Your rounds</h2>
         <p>
-          Review past rounds, or add older ones so your baseline has something to
-          compare against.
+          Review past rounds, add older ones for your baseline, or see how your
+          game is trending.
         </p>
-        <Link href="/rounds" className={styles.cta}>
-          View rounds
-        </Link>
+        <div className={styles.actions}>
+          <Link href="/rounds" className={styles.cta}>
+            View rounds
+          </Link>
+          <Link href="/trends" className={styles.secondary}>
+            Trends
+          </Link>
+        </div>
       </section>
     </div>
   );

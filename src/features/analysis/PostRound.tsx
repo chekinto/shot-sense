@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import {
+  GAME_TREND_MIN_ROUNDS,
   RECOMMENDATION_MIN_ROUNDS,
   type SectionSummary,
 } from "@/domain/scoring";
@@ -85,8 +87,11 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
         </div>
       </header>
 
+      <section className={styles.tier}>
+        <h2 className={styles.tierTitle}>Facts</h2>
+
       <Card>
-        <h2 className={styles.cardTitle}>The round</h2>
+        <h3 className={styles.cardTitle}>The round</h3>
         {summary.front && summary.back ? (
           <>
             <SectionRow label="Front 9" section={summary.front} />
@@ -99,7 +104,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
       </Card>
 
       <Card>
-        <h2 className={styles.cardTitle}>Against the benchmark</h2>
+        <h3 className={styles.cardTitle}>Against the benchmark</h3>
         <p className={styles.benchmarkNote}>
           Enter the scoring zone in regulation and get down in three on every
           hole and you never make a double.
@@ -178,7 +183,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
       </Card>
 
       <Card>
-        <h2 className={styles.cardTitle}>Shots to get back</h2>
+        <h3 className={styles.cardTitle}>Shots to get back</h3>
         <p className={styles.stgbTotal}>{shotsToGetBack.total}</p>
         <p className={styles.stgbBreakdown}>
           {shotsToGetBack.penalty} penalty · {shotsToGetBack.putting} putting ·{" "}
@@ -195,7 +200,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
 
       {tee.recorded > 0 ? (
         <Card>
-          <h2 className={styles.cardTitle}>Off the tee</h2>
+          <h3 className={styles.cardTitle}>Off the tee</h3>
           <p className={styles.teeBreakdown}>{teeOutcomeBreakdown(tee)}</p>
           {tee.costlyOffTee > 0 ? (
             <p className={styles.teeCostly}>
@@ -218,7 +223,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
 
       {approachAttempts > 0 ? (
         <Card>
-          <h2 className={styles.cardTitle}>Approach play</h2>
+          <h3 className={styles.cardTitle}>Approach play</h3>
           <p className={styles.teeBreakdown}>
             {approach.successes}/{approach.ratedAttempts} found the green or zone
             {approach.layups > 0
@@ -237,7 +242,7 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
 
       {showFaults ? (
         <Card>
-          <h2 className={styles.cardTitle}>Mistakes &amp; bunkers</h2>
+          <h3 className={styles.cardTitle}>Mistakes &amp; bunkers</h3>
           {faults.totalMistakes > 0 ? (
             <p className={styles.teeBreakdown}>
               {mistakeBreakdown(faults.mistakeCounts)}
@@ -261,9 +266,14 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
         </Card>
       ) : null}
 
+      </section>
+
+      <section className={styles.tier}>
+        <h2 className={styles.tierTitle}>This round</h2>
+
       {priority.top || observations.length > 0 ? (
         <Card>
-          <h2 className={styles.cardTitle}>This round</h2>
+          <h3 className={styles.cardTitle}>What stood out</h3>
           {priority.top ? (
             <p className={styles.biggestLeak}>
               This round, {biggestLeakLine(priority.top)}.
@@ -277,10 +287,21 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
             </ul>
           ) : null}
         </Card>
-      ) : null}
+      ) : (
+        <Card>
+          <p className={styles.clean}>
+            Nothing out of the ordinary this round.
+          </p>
+        </Card>
+      )}
+
+      </section>
+
+      <section className={styles.tier}>
+        <h2 className={styles.tierTitle}>Your game</h2>
 
       <Card>
-        <h2 className={styles.cardTitle}>Your game</h2>
+        <h3 className={styles.cardTitle}>Focus</h3>
         {recommendations ? (
           <div className={styles.recommendations}>
             {recommendations.confidence === "early" ? (
@@ -337,6 +358,22 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
           </p>
         )}
       </Card>
+
+      {completedRoundCount >= GAME_TREND_MIN_ROUNDS ? (
+        <Card>
+          <h3 className={styles.cardTitle}>Trends</h3>
+          <p className={styles.trendSnapshot}>
+            {baseline
+              ? `Recent form: entered ~${baselineCount(baseline.enteredInRegulationRate, benchmark.enteredInRegulation.of).slice(1)} in regulation, down in three ~${baselineCount(baseline.downInThreeRate, benchmark.downInThree.of).slice(1)}.`
+              : `${completedRoundCount} completed rounds so far.`}
+          </p>
+          <Link href="/trends" className={styles.trendLink}>
+            See your trends →
+          </Link>
+        </Card>
+      ) : null}
+
+      </section>
     </div>
   );
 };
