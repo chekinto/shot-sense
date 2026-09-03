@@ -96,7 +96,9 @@ test.describe("record a round", () => {
     await expect(page.getByText(/3 or more putts \(5\)/i)).toBeVisible();
 
     // Your game tier is locked (first completed round).
-    await expect(page.getByText(/unlock after about 5 rounds — 4 to go/i)).toBeVisible();
+    await expect(
+      page.getByText(/unlocks after about 3 rounds — 2 to go/i),
+    ).toBeVisible();
   });
 
   test("returning to a recorded hole shows the editable form, not a summary", async ({

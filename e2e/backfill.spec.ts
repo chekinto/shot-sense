@@ -32,6 +32,12 @@ test.describe("historical round backfill + baseline", () => {
     await expect(page.getByText(/early read — only 2 rounds/i)).toBeVisible();
     await expect(page.getByText(/recent form/i).first()).toBeVisible();
 
+    // The "Your game" card shows a caveated Primary focus from round 3.
+    const yourGame = page.getByText("Your game").locator("..");
+    await expect(yourGame).toContainText(/early call — 3 rounds/i);
+    await expect(yourGame).toContainText("Focus");
+    await expect(yourGame).toContainText(/putting/i);
+
     // Edit the third round: fix hole 1 back to a par.
     await page.goto("/rounds");
     await page

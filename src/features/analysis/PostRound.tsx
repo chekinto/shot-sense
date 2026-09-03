@@ -1,10 +1,15 @@
 import { Card } from "@/components/ui";
-import type { SectionSummary } from "@/domain/scoring";
+import {
+  RECOMMENDATION_MIN_ROUNDS,
+  type SectionSummary,
+} from "@/domain/scoring";
 import type { PostRoundView } from "./types";
 import {
   baselineCount,
   biggestLeakLine,
   categoryLabel,
+  focusEvidence,
+  keepDoingLine,
   missBreakdown,
   mistakeBreakdown,
   resultBreakdown,
@@ -37,7 +42,8 @@ const SectionRow = ({
 );
 
 export const PostRound = ({ view }: { view: PostRoundView }) => {
-  const { round, analysis, baseline, completedRoundCount } = view;
+  const { round, analysis, baseline, recommendations, completedRoundCount } =
+    view;
   const {
     summary,
     benchmark,
@@ -57,7 +63,10 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
   const longLagThreePutts = observations.some(
     (o) => o.id === "three-putts" && /long range/i.test(o.text),
   );
-  const yourGameRoundsNeeded = Math.max(0, 5 - completedRoundCount);
+  const roundsToUnlock = Math.max(
+    0,
+    RECOMMENDATION_MIN_ROUNDS - completedRoundCount,
+  );
 
   return (
     <div className={styles.page}>
@@ -272,21 +281,59 @@ export const PostRound = ({ view }: { view: PostRoundView }) => {
 
       <Card>
         <h2 className={styles.cardTitle}>Your game</h2>
-        {yourGameRoundsNeeded > 0 ? (
+        {recommendations ? (
+          <div className={styles.recommendations}>
+            {recommendations.confidence === "early" ? (
+              <p className={styles.recNote}>
+                Early call — {recommendations.roundsUsed} rounds so far.
+              </p>
+            ) : null}
+
+            <div className={styles.rec}>
+              <span className={styles.recLabel}>Focus</span>
+              <p className={styles.recBody}>
+                <strong>{categoryLabel(recommendations.primary.category)}</strong>{" "}
+                — {focusEvidence(recommendations.primary, recommendations.roundsUsed)}.
+              </p>
+            </div>
+
+            {recommendations.secondary ? (
+              <div className={styles.rec}>
+                <span className={styles.recLabel}>Then</span>
+                <p className={styles.recBody}>
+                  <strong>
+                    {categoryLabel(recommendations.secondary.category)}
+                  </strong>{" "}
+                  —{" "}
+                  {focusEvidence(
+                    recommendations.secondary,
+                    recommendations.roundsUsed,
+                  )}
+                  .
+                </p>
+              </div>
+            ) : null}
+
+            {recommendations.confidence === "firm" ? (
+              <div className={styles.rec}>
+                <span className={styles.recLabel}>Keep doing</span>
+                <p className={styles.recBody}>
+                  {recommendations.keepDoing
+                    ? keepDoingLine(recommendations.keepDoing)
+                    : "Nothing jumped out as a clear strength this stretch."}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        ) : roundsToUnlock > 0 ? (
           <p className={styles.locked}>
-            Recurring patterns and your Primary / Secondary focus unlock after
-            about 5 rounds — {yourGameRoundsNeeded} to go.
-          </p>
-        ) : baseline?.commonLeak ? (
-          <p className={styles.locked}>
-            Across your recent rounds, {categoryLabel(baseline.commonLeak)} has
-            come up most often. Primary / Secondary focus lands in a future
-            update.
+            Your Primary / Secondary focus unlocks after about{" "}
+            {RECOMMENDATION_MIN_ROUNDS} rounds — {roundsToUnlock} to go.
           </p>
         ) : (
           <p className={styles.locked}>
-            No single area stands out across your recent rounds. Primary /
-            Secondary focus lands in a future update.
+            No area is clearly costing you shots across your recent rounds — keep
+            it up.
           </p>
         )}
       </Card>

@@ -28,6 +28,7 @@ const view = (overrides: Partial<PostRoundView> = {}): PostRoundView => {
     },
     analysis: analyseRound(completedRound(holes)),
     baseline: null,
+    recommendations: null,
     completedRoundCount: 1,
     ...overrides,
   };
@@ -83,7 +84,44 @@ describe("PostRound", () => {
 
   it("locks the Your game tier with a rounds-to-go count", () => {
     render(<PostRound view={view({ completedRoundCount: 2 })} />);
-    expect(screen.getByText(/unlock after about 5 rounds — 3 to go/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/unlocks after about 3 rounds — 1 to go/i),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the recommendation set when present", () => {
+    render(
+      <PostRound
+        view={view({
+          completedRoundCount: 5,
+          recommendations: {
+            confidence: "firm",
+            roundsUsed: 5,
+            primary: {
+              category: "approach",
+              totalSeverity: 6,
+              roundsProminent: 4,
+              roundsPresent: 5,
+            },
+            secondary: {
+              category: "putting",
+              totalSeverity: 3,
+              roundsProminent: 2,
+              roundsPresent: 4,
+            },
+            keepDoing: { id: "no-penalties", category: null },
+          },
+        })}
+      />,
+    );
+    const yourGame = screen.getByText("Your game").closest("div")!;
+    expect(yourGame).toHaveTextContent("Focus");
+    expect(yourGame).toHaveTextContent(/approach play/i);
+    expect(yourGame).toHaveTextContent(/a factor in 4 of them/i);
+    expect(yourGame).toHaveTextContent("Then");
+    expect(yourGame).toHaveTextContent(
+      /no penalty strokes across your recent rounds/i,
+    );
   });
 
   it("renders 'Played N' for a 9-hole round", () => {
