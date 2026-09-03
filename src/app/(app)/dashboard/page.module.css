@@ -36,3 +36,24 @@
   font-weight: var(--weight-semibold);
   text-decoration: none;
 }
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.actions .cta {
+  margin-top: 0;
+}
+
+.secondary {
+  min-height: var(--tap-target-min);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-accent);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}

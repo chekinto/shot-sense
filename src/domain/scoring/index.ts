@@ -120,6 +120,15 @@ export {
   type FocusArea,
   type KeepDoing,
 } from "./recommendations/recommendations";
+export {
+  calculateGameTrend,
+  GAME_TREND_WINDOW,
+  GAME_TREND_MIN_ROUNDS,
+  type GameTrend,
+  type MetricSeries,
+  type TrendDirection,
+  type ApproachBandHistory,
+} from "./recommendations/gameTrend";
 
 // ---- Analysis ----
 export { analyseRound, type RoundAnalysis } from "./analysis/analyseRound";

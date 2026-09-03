@@ -1,0 +1,42 @@
+.spark {
+  width: 120px;
+  height: 32px;
+  overflow: visible;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  stroke: var(--color-surface);
+  stroke-width: 1;
+}
+
+.up .line,
+.up .dot {
+  stroke: var(--color-success, #1a7f37);
+}
+.up .dot {
+  fill: var(--color-success, #1a7f37);
+}
+
+.down .line,
+.down .dot {
+  stroke: var(--color-danger, #b00020);
+}
+.down .dot {
+  fill: var(--color-danger, #b00020);
+}
+
+.flat .line,
+.flat .dot {
+  stroke: var(--color-text-muted);
+}
+.flat .dot {
+  fill: var(--color-text-muted);
+}
