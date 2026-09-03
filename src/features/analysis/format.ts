@@ -4,7 +4,9 @@ import {
   type ApproachBandBreakdown,
   type CategoryPriority,
   type FaultSummary,
+  type FocusArea,
   type HoleResult,
+  type KeepDoing,
   type ScoringCategory,
   type SectionSummary,
   type TeeContext,
@@ -102,3 +104,26 @@ export const biggestLeakLine = (top: CategoryPriority): string => {
 /** A per-hole baseline rate scaled to this round's hole count, e.g. "~9/18". */
 export const baselineCount = (rate: number, of: number): string =>
   `~${Math.round(rate * of)}/${of}`;
+
+/** "cost about 6 shots across your last 4 rounds, a factor in 3 of them" */
+export const focusEvidence = (area: FocusArea, roundsUsed: number): string => {
+  const shots = `about ${area.totalSeverity} shot${area.totalSeverity === 1 ? "" : "s"}`;
+  const across = `across your last ${roundsUsed} rounds`;
+  const factor =
+    area.roundsProminent >= 2
+      ? `, a factor in ${area.roundsProminent} of them`
+      : "";
+  return `cost ${shots} ${across}${factor}`;
+};
+
+const KEEP_DOING_COPY: Record<KeepDoing["id"], string> = {
+  "no-penalties": "No penalty strokes across your recent rounds.",
+  "no-blow-ups": "No blow-up holes across your recent rounds.",
+  putting: "Your putting is holding up — barely a 3-putt.",
+  approach: "Your approach play is finding the green or zone.",
+  tee: "Your tee shots are keeping you in play.",
+  scrambling: "Your scrambling is saving shots when you miss the zone late.",
+};
+
+export const keepDoingLine = (keepDoing: KeepDoing): string =>
+  KEEP_DOING_COPY[keepDoing.id];

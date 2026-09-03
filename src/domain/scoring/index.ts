@@ -111,6 +111,15 @@ export {
   type PersonalBaseline,
   type BaselineConfidence,
 } from "./recommendations/personalBaseline";
+export {
+  calculateRecommendations,
+  RECOMMENDATION_MIN_ROUNDS,
+  RECOMMENDATION_FIRM_ROUNDS,
+  type RecommendationSet,
+  type RecommendationConfidence,
+  type FocusArea,
+  type KeepDoing,
+} from "./recommendations/recommendations";
 
 // ---- Analysis ----
 export { analyseRound, type RoundAnalysis } from "./analysis/analyseRound";

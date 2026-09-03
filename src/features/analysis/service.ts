@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import {
   analyseRound,
   calculatePersonalBaseline,
+  calculateRecommendations,
   BASELINE_WINDOW,
+  RECOMMENDATION_FIRM_ROUNDS,
 } from "@/domain/scoring";
 import { requireUser } from "@/features/auth/session";
 import { roundRepository } from "@/infrastructure/prisma/repositories/roundRepository";
@@ -36,6 +38,11 @@ export const getPostRoundAnalysis = async (
     .filter((r) => sameMajor(r.methodologyVersion, scoringRound.methodologyVersion));
   const baseline = calculatePersonalBaseline(history);
 
+  // Recommendations look at the recent window *including* this round.
+  const recommendations = calculateRecommendations(
+    [scoringRound, ...history].slice(0, RECOMMENDATION_FIRM_ROUNDS),
+  );
+
   const completedRoundCount = await roundRepository.countCompleted(user.id);
 
   return {
@@ -52,6 +59,7 @@ export const getPostRoundAnalysis = async (
     },
     analysis,
     baseline,
+    recommendations,
     completedRoundCount,
   };
 };
